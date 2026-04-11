@@ -25,6 +25,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
     <link rel="stylesheet" href="css/index.css">
+
+    <!-- Content Security Policy (Blindaje contra scripts maliciosos) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://npmcdn.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.gstatic.com; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firebase.google.com; frame-src https://www.google.com;">
 </head>
 
 <body>
@@ -73,33 +76,24 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
-    <script>
-        // Configuración de Firebase del usuario
-        const firebaseConfig = {
-            apiKey: "AIzaSyBUJPgPxWrAp5oBtQJagfwIfvswxgAIxcI",
-            authDomain: "gestor-de-actividades-3dae9.firebaseapp.com",
-            projectId: "gestor-de-actividades-3dae9",
-            storageBucket: "gestor-de-actividades-3dae9.firebasestorage.app",
-            messagingSenderId: "796190828670",
-            appId: "1:796190828670:web:8c6a1ce546c64cc437102f",
-            measurementId: "G-D0W7W5S3Y4"
-        };
+    <!-- App Config & Utilities -->
+    <script src="js/config.js"></script>
 
-        // Inicializar Firebase (Versión Compat)
-        firebase.initializeApp(firebaseConfig);
+    <script>
+        // Inicializar Firebase (Versión Compat) usando la config encapsulada
+        firebase.initializeApp(window.firebaseConfig);
 
         // Inicializar App Check con detección de entorno
         const appCheck = firebase.appCheck();
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         if (isLocal) {
-            // Modo Debug para Local: Activa el token de depuración en la consola
             self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
             console.log("🛠️ App Check en modo DEBUG (Local).");
         }
 
         appCheck.activate(
-            new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAp9Ckh3BqZw'),
+            new firebase.appCheck.ReCaptchaV3Provider(window.APP_CONFIG.reCaptchaSiteKey),
             true // Auto-refresh de tokens
         );
 

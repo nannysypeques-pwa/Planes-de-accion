@@ -1,7 +1,6 @@
-/**
- * Firebase Firestore Service Wrapper (v9+ Compat)
  * Proporciona métodos para interactuar con la base de datos de la agencia.
  */
+import { SecurityUtils } from './utils.js';
 
 export const FirebaseService = {
     // USUARIOS Y ROLES
@@ -46,8 +45,16 @@ export const FirebaseService = {
     // PLANES DE ACCIÓN
     async createActionPlan(planData) {
         try {
-            const res = await db.collection('action_plans').add({
+            // Sanitización de seguridad
+            const sanitizedPlan = {
                 ...planData,
+                title: SecurityUtils.sanitizeText(planData.title, 100),
+                description: SecurityUtils.sanitizeText(planData.description, 500),
+                area: SecurityUtils.sanitizeText(planData.area, 50)
+            };
+
+            const res = await db.collection('action_plans').add({
+                ...sanitizedPlan,
                 status: 'pendiente',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 progress: 0,
@@ -92,8 +99,12 @@ export const FirebaseService = {
 
     // TAREAS
     async createTask(taskData) {
-        return await db.collection('tasks').add({
+        const sanitizedTask = {
             ...taskData,
+            title: SecurityUtils.sanitizeText(taskData.title, 150)
+        };
+        return await db.collection('tasks').add({
+            ...sanitizedTask,
             status: 'pendiente',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -140,7 +151,7 @@ export const FirebaseService = {
         try {
             return await db.collection('personal_tasks').add({
                 userId,
-                title,
+                title: SecurityUtils.sanitizeText(title, 150),
                 due_date: dueDate || null,
                 due_time: dueTime || null,
                 status: 'pendiente',
@@ -275,8 +286,12 @@ export const FirebaseService = {
     },
 
     async requestVacation(data) {
-        return await db.collection('vacation_requests').add({
+        const sanitizedData = {
             ...data,
+            reason: SecurityUtils.sanitizeText(data.reason || '', 300)
+        };
+        return await db.collection('vacation_requests').add({
+            ...sanitizedData,
             status: 'pendiente', // pendiente -> aprobado_coordinador -> aprobado_gerencia -> rechazado
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
