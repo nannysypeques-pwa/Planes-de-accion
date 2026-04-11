@@ -54,8 +54,8 @@ export class ActionPlansView extends View {
         try {
             const allPlans = await FirebaseService.getPlansByRole(this.app.currentUser);
             
-            // FILTRO CRÍTICO: Solo donde soy el líder
-            let myPlans = allPlans.filter(p => p.lead_id === this.app.currentUser.uid);
+            // FILTRO CRÍTICO: Solo donde soy el líder y no estén canceladas
+            let myPlans = allPlans.filter(p => p.lead_id === this.app.currentUser.uid && p.status !== 'cancelada');
             
             if (search) {
                 myPlans = myPlans.filter(p => p.title.toLowerCase().includes(search));

@@ -108,7 +108,7 @@ export class CronogramaView extends View {
             const plansSnap = await db.collection('action_plans').get();
             this.allPlans = plansSnap.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(p => !['completado', 'cancelado'].includes(p.status));
+                .filter(p => !['completado', 'cancelada'].includes(p.status));
 
             // 3. Carga Inicial de Mis Tareas (para definir el rango de fechas inicial)
             this.allTasks = await FirebaseService.getTasksByUserId(user.uid);
@@ -188,7 +188,7 @@ export class CronogramaView extends View {
                     <div class="chrono-rows-container">
                         ${sortedMembers.map(m => {
                             const isExpanded = this.expandedMembers.has(m.uid);
-                            const mTasks = this.allTasks.filter(t => t.assigned_id === m.uid);
+                            const mTasks = this.allTasks.filter(t => t.assigned_id === m.uid && t.status !== 'cancelada');
                             return this.renderMemberRows(m, mTasks, isExpanded);
                         }).join('')}
                     </div>

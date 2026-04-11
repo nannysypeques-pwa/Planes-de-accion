@@ -18,8 +18,8 @@ export class DashboardView extends View {
             ? members 
             : members.filter(m => m.area === user.area);
         
-        // Card 1: Planes Activos
-        const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelado');
+        // Card 1: Planes Activos (Excluyendo terminados y cancelados)
+        const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelada');
         const activePlanIds = activePlans.map(p => p.id);
 
         // Obtener tareas de los planes activos para medir Cards 2 y 3
@@ -48,9 +48,10 @@ export class DashboardView extends View {
             return diffDays <= 0;
         }).length;
 
-        // Card 4: Cumplimiento global
+        // Card 4: Cumplimiento global (Completados vs No Cancelados)
         const completedCount = plans.filter(p => p.status === 'completado').length;
-        const compliance = plans.length > 0 ? Math.round((completedCount / plans.length) * 100) : 0;
+        const validPlansCount = plans.filter(p => p.status !== 'cancelada').length;
+        const compliance = validPlansCount > 0 ? Math.round((completedCount / validPlansCount) * 100) : 0;
 
         container.innerHTML = `
             <div class="dashboard-header">
@@ -123,6 +124,7 @@ export class DashboardView extends View {
                                 <option value="pendiente">⏳ Pendiente</option>
                                 <option value="en_proceso">⚡ En Proceso</option>
                                 <option value="completado">✅ Completado</option>
+                                <option value="cancelada">🚫 Cancelada</option>
                             </select>
                         </div>
 
@@ -214,11 +216,11 @@ export class DashboardView extends View {
         try {
             let plans = await FirebaseService.getPlansByRole(this.app.currentUser);
             
-            // Lógica por defecto: Si no hay filtros aplicados, solo mostrar activos
+            // Lógica por defecto: Si no hay filtros aplicados, solo mostrar activos (no completados ni cancelados)
             const isNeutral = (area === 'all' && lead === 'all' && status === 'all' && period === 'all');
             
             if (isNeutral) {
-                plans = plans.filter(p => p.status !== 'completado');
+                plans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelada');
             }
 
             // Aplicar filtros específicos
@@ -361,7 +363,7 @@ export class DashboardView extends View {
         try {
             const user = this.app.currentUser;
             const plans = await FirebaseService.getPlansByRole(user);
-            const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelado');
+            const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelada');
             const activePlanIds = activePlans.map(p => p.id);
             const plansMap = {};
             activePlans.forEach(p => plansMap[p.id] = p.title);

@@ -776,9 +776,8 @@ export class VacacionesView extends View {
                         const inputVal = parseInt(inputEl.value, 10);
                         if (isNaN(inputVal)) return;
 
-                        if (!confirm('¿Estás seguro de establecer esta cantidad como los días disponibles para este usuario? El ajuste se mantendrá de forma manual y alterará su saldo de la Ley.')) {
-                            return;
-                        }
+                        const ok = await ToastService.confirm('¿Estás seguro de establecer esta cantidad como los días disponibles para este usuario? El ajuste se mantendrá de forma manual y alterará su saldo de la Ley.');
+                        if (!ok) return;
                         
                         const base = parseInt(saveBtn.dataset.base, 10) || 0;
                         const used = parseInt(saveBtn.dataset.used, 10) || 0;

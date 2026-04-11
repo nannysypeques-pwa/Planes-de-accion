@@ -177,9 +177,15 @@ export class ActionPlanDetailView extends View {
                         <div class="modal-body" id="edit-plan-form-container">
                             <!-- Formulario cargado dinámicamente -->
                         </div>
-                        <div class="modal-footer">
-                            <button class="secondary-btn" id="cancel-edit-plan">Cancelar</button>
-                            <button class="primary-btn" id="save-plan-edits">Guardar Cambios</button>
+                        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div style="display: flex; gap: 0.8rem;">
+                                <button class="badge" style="background: #ef4444; color: white; border: none; cursor: pointer; padding: 0.8rem 1.5rem;" id="cancel-plan-btn">Cancelar Proyecto</button>
+                                ${this.app.currentUser.role === 'gerente' ? `<button class="badge" style="background: #000; color: white; border: none; cursor: pointer; padding: 0.8rem 1.5rem;" id="delete-plan-btn">Eliminar Permanente</button>` : ''}
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="secondary-btn" id="cancel-edit-plan">No guardar</button>
+                                <button class="primary-btn" id="save-plan-edits">Guardar Cambios</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -264,6 +270,12 @@ export class ActionPlanDetailView extends View {
                 }
             });
         }
+
+        const cancelPlanBtn = document.getElementById('cancel-plan-btn');
+        if (cancelPlanBtn) cancelPlanBtn.onclick = () => this.cancelPlan();
+
+        const deletePlanBtn = document.getElementById('delete-plan-btn');
+        if (deletePlanBtn) deletePlanBtn.onclick = () => this.deletePlanPermanent();
 
         const closeEditModal = document.getElementById('close-edit-modal');
         if (closeEditModal) closeEditModal.onclick = () => document.getElementById('edit-plan-modal').classList.add('hidden');
@@ -940,6 +952,96 @@ export class ActionPlanDetailView extends View {
             ToastService.error("Error al actualizar el plan");
             btn.disabled = false;
             btn.textContent = "Guardar Cambios";
+        }
+    }
+
+    async cancelPlan() {
+        const ok = await ToastService.confirm("⚠️ ¿ESTÁS SEGURO? Al cancelar el plan, todas sus tareas asociadas también se cancelarán.", "Sí, cancelar todo", "Volver");
+        if (!ok) return;
+
+        try {
+            const btn = document.getElementById('cancel-plan-btn');
+            btn.disabled = true;
+            btn.textContent = "Procesando...";
+
+            const batch = db.batch();
+
+            // 1. Actualizar Plan a 'cancelada'
+            const planRef = db.collection('action_plans').doc(this.planId);
+            batch.update(planRef, {
+                status: 'cancelada',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // 2. Cancelar todas las tareas (se marcan como canceladas)
+            const taskSnap = await db.collection('tasks').where('plan_id', '==', this.planId).get();
+            taskSnap.docs.forEach(doc => {
+                batch.update(doc.ref, { 
+                    status: 'cancelada',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            // 3. Nota de historial con UID para reglas de seguridad
+            const historyRef = planRef.collection('history').doc();
+            batch.set(historyRef, {
+                type: 'status_change',
+                from: this.plan.status,
+                to: 'cancelada',
+                note: 'Proyecto y tareas cancelados por Gerencia/Creador.',
+                author_id: this.app.currentUser.uid,
+                author_name: this.app.currentUser.name,
+                author_role: this.app.currentUser.role,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            await batch.commit();
+
+            ToastService.success("Plan y tareas canceladas correctamente.");
+            document.getElementById('edit-plan-modal').classList.add('hidden');
+            this.app.navigateTo('plans');
+        } catch (error) {
+            console.error("Error en cancelación:", error);
+            ToastService.error("Fallo al cancelar: " + error.message);
+            const btn = document.getElementById('cancel-plan-btn');
+            if(btn) {
+                btn.disabled = false;
+                btn.textContent = "Cancelar Proyecto";
+            }
+        }
+    }
+
+    async deletePlanPermanent() {
+        const ok = await ToastService.confirm("🚨 ¡ADVERTENCIA CRÍTICA! Esto borrará el plan y TODAS sus tareas de la base de datos PERMANENTEMENTE. Esta acción no se puede deshacer.", "ELIMINAR TODO", "Cancelar", "danger");
+        if (!ok) return;
+
+        try {
+            const btn = document.getElementById('delete-plan-btn');
+            btn.disabled = true;
+            btn.textContent = "Borrando...";
+
+            const batch = db.batch();
+
+            // 1. Borrar Tareas
+            const taskSnap = await db.collection('tasks').where('plan_id', '==', this.planId).get();
+            taskSnap.docs.forEach(doc => batch.delete(doc.ref));
+
+            // 2. Borrar Plan
+            batch.delete(db.collection('action_plans').doc(this.planId));
+
+            await batch.commit();
+
+            ToastService.success("Proyecto eliminado permanentemente.");
+            document.getElementById('edit-plan-modal').classList.add('hidden');
+            this.app.navigateTo('plans');
+        } catch (error) {
+            console.error("Error en borrado:", error);
+            ToastService.error("Fallo al borrar: " + error.message);
+            const btn = document.getElementById('delete-plan-btn');
+            if(btn) {
+                btn.disabled = false;
+                btn.textContent = "Eliminar Permanente";
+            }
         }
     }
 }

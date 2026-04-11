@@ -138,7 +138,8 @@ export class MembersView extends View {
         tbody.querySelectorAll('.reset-pass-btn').forEach(btn => {
             btn.onclick = async () => {
                 const email = btn.dataset.email;
-                if (confirm(`¿Enviar correo de restablecimiento de contraseña a ${email}?`)) {
+                const ok = await ToastService.confirm(`¿Enviar correo de restablecimiento de contraseña a ${email}?`);
+                if (ok) {
                     try {
                         await FirebaseService.sendPasswordResetEmail(email);
                         ToastService.success("Correo de restablecimiento enviado correctamente.");
@@ -151,7 +152,8 @@ export class MembersView extends View {
 
         tbody.querySelectorAll('.delete-btn').forEach(btn => {
             btn.onclick = async () => {
-                if (confirm("¿Estás seguro de borrar este usuario? Perderá acceso al sistema.")) {
+                const ok = await ToastService.confirm("¿Estás seguro de borrar este usuario? Perderá acceso al sistema.", "Sí, borrar", "Cancelar", "danger");
+                if (ok) {
                     try {
                         await db.collection('users').doc(btn.dataset.id).delete();
                         ToastService.success("Usuario eliminado.");

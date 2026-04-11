@@ -110,36 +110,33 @@ export class ToastService {
     static error(msg) { this.show(msg, 'error'); }
     static warning(msg) { this.show(msg, 'warning'); }
 
-    static async confirm(message, confirmText = "Aceptar", cancelText = "Cancelar") {
+    static async confirm(message, confirmText = "Aceptar", cancelText = "Cancelar", type = 'warning') {
+        // Limpiar cualquier modal previo que haya quedado huérfano
+        document.querySelectorAll('.confirm-overlay').forEach(el => el.remove());
+
         return new Promise((resolve) => {
             const container = document.createElement('div');
-            container.className = 'modal confirm-modal toast-confirm';
+            container.className = 'confirm-overlay';
+            
+            const icon = type === 'warning' ? '⚠️' : type === 'danger' ? '🗑️' : 'ℹ️';
+            const btnColor = type === 'danger' ? '#ef4444' : 'var(--rosa-med)';
+
             container.innerHTML = `
-                <div class="modal-content glass-effect" style="max-width: 400px; text-align: center; padding: 2.5rem 2rem;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
-                    <div style="color: var(--text-main); font-size: 1.1rem; font-weight: 600; line-height: 1.5; margin-bottom: 2rem;">
-                        ${message}
-                    </div>
-                    <div class="modal-actions" style="justify-content: center; gap: 1rem; margin-top: 0;">
+                <div class="confirm-content glass-effect">
+                    <div class="confirm-icon">${icon}</div>
+                    <div class="confirm-msg">${message}</div>
+                    <div class="confirm-actions">
                         <button class="secondary-btn" id="toast-cancel-btn">${cancelText}</button>
-                        <button class="primary-btn" id="toast-ok-btn" style="background: var(--rosa-med);">${confirmText}</button>
+                        <button class="primary-btn" id="toast-ok-btn" style="background: ${btnColor}">${confirmText}</button>
                     </div>
                 </div>
             `;
             document.body.appendChild(container);
             
-            // Allow CSS to trigger transition if any is written, fallback styling
-            container.style.display = 'flex';
-            container.style.alignItems = 'center';
-            container.style.justifyContent = 'center';
-            container.style.backgroundColor = 'rgba(0,0,0,0.5)';
-            container.style.backdropFilter = 'blur(4px)';
-
-            const content = container.querySelector('.modal-content');
-            content.style.animation = 'toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+            const content = container.querySelector('.confirm-content');
 
             const close = (result) => {
-                content.style.animation = 'toast-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+                container.classList.add('fade-out');
                 setTimeout(() => {
                     container.remove();
                     resolve(result);
@@ -148,6 +145,11 @@ export class ToastService {
 
             document.getElementById('toast-cancel-btn').onclick = () => close(false);
             document.getElementById('toast-ok-btn').onclick = () => close(true);
+            
+            // Cerrar al hacer clic fuera
+            container.onclick = (e) => {
+                if (e.target === container) close(false);
+            };
         });
     }
 }

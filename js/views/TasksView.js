@@ -12,17 +12,17 @@ export class TasksView extends View {
         const container = this.createEl('div', 'tasks-view-container fade-in');
         
         container.innerHTML = `
-            <div class="view-header" style="margin-bottom: 3rem;">
+            <div class="view-header" style="margin-bottom: 2.2rem;">
                 <div>
                     <h1>Mis tareas</h1>
                     <p style="color: var(--rosa-med); font-weight: 600;">Control personal y cumplimiento de proyectos</p>
                 </div>
             </div>
 
-            <div class="tasks-sections-grid">
+            <div class="tasks-sections-grid" style="display: flex; gap: 2.5rem; align-items: flex-start; flex-wrap: wrap;">
                 
                 <!-- SECCIÓN 1: ACTIVIDADES ASIGNADAS (DEL PROYECTO) -->
-                <section class="assigned-tasks-section">
+                <section class="assigned-tasks-section" style="flex: 1; min-width: 350px;">
                     <div class="section-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
                         <h2 style="font-size: 1.4rem;">🎯 Actividades Asignadas</h2>
                     </div>
@@ -39,27 +39,29 @@ export class TasksView extends View {
                 </section>
 
                 <!-- SECCIÓN 2: MIS ACTIVIDADES (PENDIENTES LIBRES) -->
-                <section class="personal-tasks-section glass-effect" style="border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
+                <section class="personal-tasks-section glass-effect" style="flex: 0 0 420px; min-width: 320px; border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
                     <div class="section-header" style="margin-bottom: 1.5rem;">
                         <h2 style="font-size: 1.4rem;">📝 Mis Actividades</h2>
                         <p style="font-size: 0.85rem; color: var(--text-dim);">Lista libre de pendientes personales</p>
                     </div>
 
-                    <!-- Formulario Rápido -->
-                    <div class="quick-add-form" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border);">
-                        <input type="text" id="personal-task-title" placeholder="¿Qué tienes pendiente?" class="search-input" style="width: 100%;">
-                        <div style="display: flex; gap: 0.6rem; align-items: center;">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 1;">
-                                <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px;">📅 Fecha</label>
-                                <input type="date" id="personal-task-date" class="search-input" style="width: 100%;">
+                    <!-- Formulario Rápido Rediseñado -->
+                    <div class="quick-add-form" style="margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px dashed var(--border);">
+                        <div class="input-group" style="margin-bottom: 1.2rem;">
+                            <label style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--rosa-strong); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.6rem;">✨ Nueva Actividad</label>
+                            <input type="text" id="personal-task-title" placeholder="¿Qué tienes pendiente hoy?" class="search-input" style="width: 100%; border-radius: 14px; font-size: 1rem; padding: 0.9rem 1.2rem;">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem;">📅 Fecha</label>
+                                <input type="date" id="personal-task-date" class="search-input" style="width: 100%; border-radius: 12px; padding: 0.75rem;">
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 0 0 130px;">
-                                <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px;">🕐 Hora</label>
-                                <input type="time" id="personal-task-time" class="search-input" style="width: 100%;">
+                            <div class="input-group">
+                                <label style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem;">🕐 Hora</label>
+                                <input type="time" id="personal-task-time" class="search-input" style="width: 100%; border-radius: 12px; padding: 0.75rem;">
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem; flex: 0 0 auto; margin-top: 1.2rem;">
-                                <button class="primary-btn" id="add-personal-btn" style="padding: 0.65rem 1.4rem; height: 44px; white-space: nowrap;">+ Agregar</button>
-                            </div>
+                            <button class="primary-btn" id="add-personal-btn" style="padding: 0 2rem; height: 50px; border-radius: 14px; font-weight: 800; transform: none; box-shadow: 0 8px 20px rgba(210, 50, 143, 0.25);">+ Agregar</button>
                         </div>
                     </div>
 
@@ -134,24 +136,25 @@ export class TasksView extends View {
             // 2. Obtener nombres de los líderes
             const leadNames = await FirebaseService.getUserNamesByIds(Array.from(leadIds));
 
-            // 3. Filtrado previo
-            let filteredTasks = [];
+            // 3. Filtrado previo (Siempre excluir canceladas)
+            let filteredTasks = allTasks.filter(t => t.status !== 'cancelada');
+
             if (filter === 'overdue') {
-                filteredTasks = allTasks.filter(t => {
+                filteredTasks = filteredTasks.filter(t => {
                     if (!t.due_date || t.status === 'completado') return false;
                     const dueDate = new Date(t.due_date + 'T00:00:00');
                     const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
                     return diffDays <= 0;
                 });
             } else if (filter === 'upcoming') {
-                filteredTasks = allTasks.filter(t => {
+                filteredTasks = filteredTasks.filter(t => {
                     if (!t.due_date || t.status === 'completado') return false;
                     const dueDate = new Date(t.due_date + 'T00:00:00');
                     const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
                     return diffDays > 0 && diffDays <= 2;
                 });
             } else {
-                filteredTasks = allTasks.filter(t => t.status !== 'completado');
+                filteredTasks = filteredTasks.filter(t => t.status !== 'completado');
             }
 
             if (filteredTasks.length === 0) {
@@ -207,9 +210,10 @@ export class TasksView extends View {
                             let indicator = 'indicator-yellow';
                             if (t.status === 'en_proceso') indicator = 'indicator-blue';
                             else if (t.status === 'completado') indicator = 'indicator-green';
+                            else if (t.status === 'cancelada') indicator = 'indicator-cancelada';
                             
                             // Si está retrasada (vencida y no completada), forzar rojo
-                            if (diffDays < 0 && t.status !== 'completado') indicator = 'indicator-red';
+                            if (diffDays < 0 && !['completado', 'cancelada'].includes(t.status)) indicator = 'indicator-red';
 
                             const lastNote = t.lastNote ? `
                                 <div class="task-last-note">
@@ -234,6 +238,7 @@ export class TasksView extends View {
                                                 <option value="pendiente" ${t.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
                                                 <option value="en_proceso" ${t.status === 'en_proceso' ? 'selected' : ''}>⚡ En Proceso</option>
                                                 <option value="completado" ${t.status === 'completado' ? 'selected' : ''}>✅ Completada</option>
+                                                <option value="cancelada" ${t.status === 'cancelada' ? 'selected' : ''}>🚫 Cancelada</option>
                                             </select>
                                         </div>
                                     </div>
@@ -323,7 +328,8 @@ export class TasksView extends View {
         const statusMap = {
             'pendiente': '⏳ Pendiente',
             'en_proceso': '⚡ En Proceso',
-            'completado': '✅ Completada'
+            'completado': '✅ Completada',
+            'cancelada': '🚫 Cancelada'
         };
 
         titleEl.textContent = title;
@@ -382,10 +388,10 @@ export class TasksView extends View {
             
             if (tasks.length === 0) {
                 container.innerHTML = `
-                    <div style="text-align: center; padding: 2rem 1rem; color: var(--text-dim);">
-                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
-                        <p style="font-weight: 600;">No tienes pendientes personales.</p>
-                        <p style="font-size: 0.82rem; margin-top: 0.25rem;">Agrega una actividad arriba para empezar.</p>
+                    <div style="text-align: center; padding: 4rem 1rem; color: var(--text-dim);">
+                        <div style="font-size: 4rem; margin-bottom: 1.5rem; filter: grayscale(1); opacity: 0.3;">📝</div>
+                        <p style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">No tienes pendientes personales</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">Las actividades que agregues aparecerán aquí.</p>
                     </div>`;
                 return;
             }
@@ -403,7 +409,7 @@ export class TasksView extends View {
                 return new Date(isoStr) < now;
             };
 
-            container.innerHTML = tasks.map((t, i) => {
+            container.innerHTML = tasks.filter(t => t.status !== 'cancelada').map((t, i) => {
                 const isDone = t.status === 'completado';
                 const isOverdue = !isDone && isOverdueCheck(t.due_date, t.due_time);
                 const dateLabel = fmtDate(t.due_date, t.due_time);
@@ -453,6 +459,12 @@ export class TasksView extends View {
                                        transition: opacity 0.2s; border-radius: 6px;"
                                 onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.35'">✏️</button>
                                 
+                        <button class="cancel-personal-btn" data-id="${t.id}" title="Cancelar"
+                                 style="background: transparent; border: none; cursor: pointer;
+                                        opacity: 0.35; font-size: 1rem; padding: 2px 4px;
+                                        transition: opacity 0.2s; border-radius: 6px;"
+                                 onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.35'">🚫</button>
+                                 
                         <button class="delete-personal-btn" data-id="${t.id}"
                                 style="background: transparent; border: none; cursor: pointer;
                                        opacity: 0.35; font-size: 1rem; padding: 2px 4px;
@@ -475,10 +487,22 @@ export class TasksView extends View {
                 btn.onclick = () => this.editPersonalTask(btn.dataset.id, tasks.find(t => t.id === btn.dataset.id));
             });
 
-            // Listeners eliminar
+            // Listeners cancelar con Modal Custom
+            container.querySelectorAll('.cancel-personal-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    const ok = await ToastService.confirm('¿Cancelar esta actividad? Dejará de ser visible en tus pendientes.', 'Sí, cancelar', 'No');
+                    if (ok) {
+                        await db.collection('personal_tasks').doc(btn.dataset.id).update({ status: 'cancelada' });
+                        this.loadPersonalTasks();
+                    }
+                };
+            });
+
+            // Listeners eliminar con Modal Custom
             container.querySelectorAll('.delete-personal-btn').forEach(btn => {
                 btn.onclick = async () => {
-                    if (confirm('¿Eliminar esta actividad?')) {
+                    const ok = await ToastService.confirm('¿Eliminar esta actividad permanentemente?', 'Sí, eliminar', 'Cancelar', 'danger');
+                    if (ok) {
                         await FirebaseService.deletePersonalTask(btn.dataset.id);
                         this.loadPersonalTasks();
                     }
