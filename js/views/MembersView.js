@@ -19,8 +19,8 @@ export class MembersView extends View {
                 <button class="primary-btn" id="add-member-btn" style="width: auto; padding: 0.8rem 2rem;">+ Nuevo Miembro</button>
             </div>
 
-            <div class="glass-effect" style="border-radius: var(--radius-lg); overflow: hidden; margin-top: 2rem;">
-                <table class="data-table">
+            <div class="glass-effect" style="border-radius: var(--radius-lg); overflow-x: auto; margin-top: 2rem; -webkit-overflow-scrolling: touch;">
+                <table class="data-table" style="min-width: 700px; width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
                             <th>Nombre</th>
