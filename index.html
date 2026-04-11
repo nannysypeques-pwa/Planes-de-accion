@@ -93,9 +93,14 @@
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         if (isLocal) {
-            // En local saltamos el reCAPTCHA para evitar bloqueos por throttling (403)
-            // Para producción, se activa normalmente
-            console.log("🏠 Entorno local detectado. Saltando App Check.");
+            // Activar Modo Debug para trabajar con "Enforce" encendido
+            // Esto generará un token en la consola (F12) que debes registrar en Firebase
+            self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+            appCheck.activate(
+                new firebase.appCheck.DebugAppCheckProvider(),
+                true
+            );
+            console.log("🛠️ App Check en modo DEBUG (Local). Copia el token de la consola abajo para registrarlo en Firebase.");
         } else {
             appCheck.activate(
                 new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAp9Ckh3BqZw'),
