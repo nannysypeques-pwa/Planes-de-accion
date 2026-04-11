@@ -88,12 +88,20 @@
         // Inicializar Firebase (Versión Compat)
         firebase.initializeApp(firebaseConfig);
 
-        // Inicializar App Check con reCAPTCHA v3
+        // Inicializar App Check con detección de entorno
         const appCheck = firebase.appCheck();
-        appCheck.activate(
-            new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAp9Ckh3BqZw'),
-            true // Auto-refresh de tokens
-        );
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isLocal) {
+            // En local saltamos el reCAPTCHA para evitar bloqueos por throttling (403)
+            // Para producción, se activa normalmente
+            console.log("🏠 Entorno local detectado. Saltando App Check.");
+        } else {
+            appCheck.activate(
+                new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAp9Ckh3BqZw'),
+                true // Auto-refresh de tokens
+            );
+        }
 
         const db = firebase.firestore();
         const auth = firebase.auth();
