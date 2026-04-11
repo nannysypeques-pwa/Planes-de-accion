@@ -88,12 +88,14 @@
         // Inicializar Firebase (Versión Compat)
         firebase.initializeApp(firebaseConfig);
 
-        // Inicializar App Check con reCAPTCHA v3
+        /* 
+        // Comentado temporalmente para Debug
         const appCheck = firebase.appCheck();
         appCheck.activate(
             new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAP9Ckh3BqZw'),
-            true // Auto-refresh de tokens
+            true
         );
+        */
 
         const db = firebase.firestore();
         const auth = firebase.auth();
