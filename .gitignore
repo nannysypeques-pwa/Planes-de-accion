@@ -1,0 +1,36 @@
+# Gestor de Actividades — Nannys y Peques
+
+## Archivos excluidos del repositorio
+
+# Dependencias
+node_modules/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VSCode (configuraciones locales del desarrollador)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/*.code-workspace
+
+# Archivos de entorno y configuración sensible
+.env
+.env.local
+.env.production
+firebase.config.js
+js/config/firebaseConfig.js
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build / dist
+dist/
+build/
+
+# Temporales
+*.tmp
+*.bak
+*.swp

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRABAJO EN EQUIPO | Nannys y Peques</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#f5f7fa">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="logo-sin-fondo.png">
+    <link rel="apple-touch-icon" href="logo-sin-fondo.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Main Application Container -->
+        <header id="main-header" class="glass-effect hidden">
+            <div class="logo">TRABAJO EN <span>EQUIPO</span> <span class="brand-subtitle">Nannys y Peques</span></div>
+            <nav id="main-nav">
+                <a href="#dashboard" id="nav-dashboard" class="nav-link">Dashboard</a>
+                <a href="#plans" id="nav-plans" class="nav-link">Mis planes</a>
+                <a href="#tasks" id="nav-tasks" class="nav-link">Mis tareas</a>
+                <a href="#cronograma" id="nav-cronograma" class="nav-link">Mi Cronograma</a>
+                <a href="#vacaciones" id="nav-vacaciones" class="nav-link">Vacaciones</a>
+                <a href="#members" id="nav-members" class="nav-link admin-only hidden">Gestión Equipo</a>
+            </nav>
+            <div id="user-controls" class="controls">
+                <button id="logout-btn" class="secondary-btn sm">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <main id="view-container">
+            <!-- Dynamic Content Loaded Here -->
+            <div class="loader-container">
+                <div class="spinner"></div>
+            </div>
+        </main>
+
+        <nav id="mobile-nav" class="glass-effect hidden">
+            <a href="#dashboard" class="m-nav-link" title="Dashboard">🏠</a>
+            <a href="#plans" class="m-nav-link" title="Mis planes">📋</a>
+            <a href="#tasks" class="m-nav-link" title="Mis tareas">✅</a>
+            <a href="#vacaciones" class="m-nav-link" title="Vacaciones">🏖️</a>
+            <a href="#cronograma" class="m-nav-link" title="Mi Cronograma">📅</a>
+            <a href="#notifications" class="m-nav-link" title="Notificaciones">🔔</a>
+        </nav>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
+    
+    <!-- Flatpickr for Date Selection -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
+    <script>
+        // Configuración de Firebase del usuario
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUJPgPxWrAp5oBtQJagfwIfvswxgAIxcI",
+            authDomain: "gestor-de-actividades-3dae9.firebaseapp.com",
+            projectId: "gestor-de-actividades-3dae9",
+            storageBucket: "gestor-de-actividades-3dae9.firebasestorage.app",
+            messagingSenderId: "796190828670",
+            appId: "1:796190828670:web:8c6a1ce546c64cc437102f",
+            measurementId: "G-D0W7W5S3Y4"
+        };
+
+        // Inicializar Firebase (Versión Compat)
+        firebase.initializeApp(firebaseConfig);
+
+        // Inicializar App Check con reCAPTCHA v3
+        const appCheck = firebase.appCheck();
+        appCheck.activate(
+            new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAP9Ckh3BqZw'),
+            true // Auto-refresh de tokens
+        );
+
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+    </script>
+
+    <!-- App Logic -->
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>
