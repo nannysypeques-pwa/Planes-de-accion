@@ -39,10 +39,10 @@ export class TasksView extends View {
                 </section>
 
                 <!-- SECCIÓN 2: MIS ACTIVIDADES (PENDIENTES LIBRES) -->
-                <section class="personal-tasks-section glass-effect" style="flex: 0 0 420px; min-width: 320px; border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
-                    <div class="section-header" style="margin-bottom: 1.5rem;">
-                        <h2 style="font-size: 1.4rem;">📝 Mis Actividades</h2>
-                        <p style="font-size: 0.85rem; color: var(--text-dim);">Lista libre de pendientes personales</p>
+                <section class="personal-tasks-section glass-effect" style="flex: 0 0 450px; min-width: 320px; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); padding: 2.5rem;">
+                    <div style="margin-bottom: 2rem; border-bottom: 2px solid rgba(210, 50, 143, 0.1); padding-bottom: 1rem;">
+                        <h2 style="font-size: 1.5rem; margin-bottom: 0.4rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;"><span style="font-size: 1.4rem;">📝</span> Mis Actividades</h2>
+                        <p style="font-size: 0.9rem; color: var(--text-dim); margin: 0;">Lista libre de pendientes personales</p>
                     </div>
 
                     <!-- Formulario Rápido Rediseñado -->
@@ -52,7 +52,7 @@ export class TasksView extends View {
                             <input type="text" id="personal-task-title" placeholder="¿Qué tienes pendiente hoy?" class="search-input" style="width: 100%; border-radius: 14px; font-size: 1rem; padding: 0.9rem 1.2rem;">
                         </div>
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                             <div class="input-group">
                                 <label style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem;">📅 Fecha</label>
                                 <input type="date" id="personal-task-date" class="search-input" style="width: 100%; border-radius: 12px; padding: 0.75rem;">
@@ -61,7 +61,7 @@ export class TasksView extends View {
                                 <label style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem;">🕐 Hora</label>
                                 <input type="time" id="personal-task-time" class="search-input" style="width: 100%; border-radius: 12px; padding: 0.75rem;">
                             </div>
-                            <button class="primary-btn" id="add-personal-btn" style="padding: 0 2rem; height: 50px; border-radius: 14px; font-weight: 800; transform: none; box-shadow: 0 8px 20px rgba(210, 50, 143, 0.25);">+ Agregar</button>
+                            <button class="primary-btn" id="add-personal-btn" style="grid-column: span 2; padding: 0.8rem; border-radius: 14px; font-weight: 800; margin-top: 0.5rem; box-shadow: 0 8px 20px rgba(210, 50, 143, 0.25);">Agregar Actividad</button>
                         </div>
                     </div>
 

@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función para validar si el usuario es Gerente
+    function isManager() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerente';
+    }
+
+    // 1. USUARIOS: Todos leen perfiles. El dueño o el Gerente pueden editar/borrar.
+    match /users/{userId} {
+      allow read: if request.auth.uid != null;
+      allow write: if request.auth.uid == userId || isManager();
+    }
+
+    // 2. PLANES DE ACCIÓN: Acceso abierto para lectura/creación.
+    match /action_plans/{planId} {
+      allow read: if request.auth.uid != null;
+      allow create: if request.auth.uid != null;
+      // Edición y borrado
+      allow update, delete: if request.auth.uid == resource.data.creator_id || isManager();
+      
+      // Historial
+      match /history/{histId} {
+        allow read, write: if request.auth.uid != null;
+      }
+    }
+
+    // 3. TAREAS DE PROYECTO
+    match /tasks/{taskId} {
+      allow read: if request.auth.uid != null;
+      allow create: if request.auth.uid != null;
+      allow update, delete: if request.auth.uid == resource.data.creator_id || 
+                            request.auth.uid == resource.data.assigned_id ||
+                            isManager();
+    }
+
+    // 4. TAREAS PERSONALES
+    match /personal_tasks/{taskId} {
+      // Permitir todo a su dueño
+      allow read, write: if request.auth.uid != null;
+    }
+
+    // 5. NOTIFICACIONES
+    match /notifications/{notifId} {
+      allow read, write: if request.auth.uid != null;
+    }
+
+    // 6. VACACIONES
+    match /vacation_requests/{reqId} {
+      allow read: if request.auth.uid != null;
+      allow write: if request.auth.uid != null;
+    }
+  }
+}

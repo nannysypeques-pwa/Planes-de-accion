@@ -831,6 +831,18 @@ export class VacacionesView extends View {
         const DAY_W = 35; // px por día
         const TRACK_W = days.length * DAY_W;
         
+        // Días Festivos proporcionados por el usuario (MM-DD)
+        const holidays = ["01-01", "02-02", "03-16", "05-01", "09-16", "11-16", "12-25"];
+
+        // Función Helper para validar si es día no laborable
+        const isNonWorkingDay = (dateObj) => {
+            const isWknd = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const isHoliday = holidays.includes(`${mm}-${dd}`);
+            return isWknd || isHoliday;
+        };
+        
         // Agrupar requests por User
         const userMap = {};
         validReqs.forEach(req => {
@@ -863,18 +875,29 @@ export class VacacionesView extends View {
 
         // Render days header
         let daysHtml = days.map(d => {
-            const isWknd = d.getDay() === 0 || d.getDay() === 6;
+            const isNW = isNonWorkingDay(d);
             const isToday = d.toDateString() === today.toDateString();
-            return `<div style="display: inline-block; width: ${DAY_W}px; text-align: center; font-size: 0.75rem; border-right: 1px solid #f0f0f0; background: ${isWknd ? '#fafafa' : 'transparent'}; color: ${isToday ? 'var(--rosa-strong)' : 'var(--text-main)'}; font-weight: ${isToday ? '800' : 'normal'}; padding: 4px 0;">${d.getDate()}</div>`;
+            
+            let bg = isToday ? 'var(--rosa-light)' : (isNW ? '#ececec' : 'transparent');
+            let color = isToday ? 'var(--rosa-strong)' : (isNW ? '#6b7280' : 'var(--text-main)');
+            let fontWeight = isToday ? '900' : (isNW ? '700' : 'normal');
+
+            return `<div style="display: inline-block; width: ${DAY_W}px; text-align: center; font-size: 0.75rem; border-right: 1px solid #e5e7eb; background: ${bg}; color: ${color}; font-weight: ${fontWeight}; padding: 4px 0;">${d.getDate()}</div>`;
         }).join('');
 
-        // V-lines for track backgound
+        // V-lines for track background
         const bgLines = days.map(d => {
-            const isWknd = d.getDay() === 0 || d.getDay() === 6;
+            const isNW = isNonWorkingDay(d);
             const isToday = d.toDateString() === today.toDateString();
-            let borderStyle = isWknd ? '1px dashed #f0f0f0' : '1px solid #f5f5f5';
-            if (isToday) borderStyle = '1px solid var(--rosa-light)';
-            return `<div style="position: absolute; top: 0; bottom: 0; left: 0; margin-left:-1px; border-right: ${borderStyle}; width: ${DAY_W}px; ${isWknd ? 'background: #fcfcfc;' : ''}"></div>`;
+            
+            let borderStyle = isNW ? '1px dashed #d1d5db' : '1px solid #f0f0f0';
+            let bgFill = isNW ? '#ececec' : 'transparent';
+            
+            let extraStyles = isToday 
+                ? `background: rgba(210, 50, 143, 0.04); border-left: 2px solid var(--rosa-strong); border-right: ${borderStyle};` 
+                : `background: ${bgFill}; border-right: ${borderStyle};`;
+
+            return `<div style="position: absolute; top: 0; bottom: 0; left: 0; margin-left:-1px; width: ${DAY_W}px; ${extraStyles}"></div>`;
         }).join('');
 
         // Generar filas
@@ -901,49 +924,49 @@ export class VacacionesView extends View {
             u.reqs.forEach(req => {
                 if (!req.full_dates && !req.start_date) return;
                 
-                let renderStart, renderEnd;
-                if (req.full_dates) {
-                    const sorted = req.full_dates.split(', ').sort();
-                    renderStart = new Date(sorted[0] + 'T12:00:00');
-                    renderEnd = new Date(sorted[sorted.length - 1] + 'T12:00:00');
-                } else {
-                    renderStart = new Date(req.start_date + 'T12:00:00');
-                    renderEnd = new Date(req.end_date + 'T12:00:00');
-                }
-
-                if (isNaN(renderStart) || isNaN(renderEnd)) return;
-
-                // Day index calculation
-                const si = days.findIndex(d => d.toDateString() === renderStart.toDateString());
-                const ei = days.findIndex(d => d.toDateString() === renderEnd.toDateString());
-                
-                // Si la vacación está completamente fuera del rango, ignorar
-                if ((si === -1 && renderStart > endBase) || (ei === -1 && renderEnd < startBase)) return;
-
-                // Ajustar si cruza límites visuales
-                const drawSi = si >= 0 ? si : 0;
-                const drawEi = ei >= 0 ? ei : days.length - 1;
-
-                const leftPx = drawSi * DAY_W;
-                const widthPx = ((drawEi - drawSi) + 1) * DAY_W;
-
                 const isApproved = ['aprobado_gerencia', 'aprobado'].includes(req.status);
                 const color = isApproved ? '#10b981' : 'var(--amarillo-strong)';
                 const label = isApproved ? 'Autorizado' : 'Pendiente';
 
-                rowsHtml += `
-                    <div
-                        class="chrono-vac-bar"
-                        data-id="${req.id}"
-                        data-name="${u.name}"
-                        data-days="${req.days_requested}"
-                        data-approved="${isApproved}"
-                        title="${u.name} • ${req.days_requested} días • ${label}${isApproved ? ' — Clic para eliminar' : ''}"
-                        style="position: absolute; left: ${leftPx}px; width: ${widthPx}px; top: 12px; height: 24px; background: ${color}; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: ${isApproved ? 'pointer' : 'default'}; display: flex; align-items: center; overflow: hidden; padding: 0 6px; transition: filter 0.15s ease;">
-                        <span style="color: white; font-size: 0.65rem; font-weight: 800; white-space: nowrap;">${label}</span>
-                        ${isApproved ? '<span style="color: rgba(255,255,255,0.7); font-size: 0.6rem; margin-left: 4px;">&#x1F5D1;</span>' : ''}
-                    </div>
-                `;
+                let individualDates = [];
+                if (req.full_dates) {
+                    // Múltiples días seleccionados (split por coma)
+                    const sorted = req.full_dates.split(', ').sort();
+                    individualDates = sorted.map(dStr => new Date(dStr + 'T12:00:00'));
+                } else {
+                    // Legacy o rango viejo: rellenar manualmente
+                    const s = new Date(req.start_date + 'T12:00:00');
+                    const e = new Date(req.end_date + 'T12:00:00');
+                    if (!isNaN(s) && !isNaN(e)) {
+                        for(let dt = new Date(s); dt <= e; dt.setDate(dt.getDate()+1)) {
+                            individualDates.push(new Date(dt));
+                        }
+                    }
+                }
+
+                // Generar un minicuadro (bloque) por cada día laborable
+                individualDates.forEach(dt => {
+                    if (isNaN(dt)) return;
+                    
+                    // index visual
+                    const si = days.findIndex(d => d.toDateString() === dt.toDateString());
+                    if (si === -1) return; // Fuera del rango visual actual
+
+                    const leftPx = si * DAY_W;
+                    const widthPx = DAY_W - 4; // Margen para separar un poco
+
+                    rowsHtml += `
+                        <div
+                            class="chrono-vac-bar"
+                            data-id="${req.id}"
+                            data-name="${u.name}"
+                            data-days="1"
+                            data-approved="${isApproved}"
+                            title="${u.name} • ${label} el ${dt.toLocaleDateString()}"
+                            style="position: absolute; left: ${leftPx + 2}px; width: ${widthPx}px; top: 12px; height: 24px; background: ${color}; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: ${isApproved ? 'pointer' : 'default'}; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: filter 0.15s ease;">
+                        </div>
+                    `;
+                });
             });
 
             rowsHtml += `</div></div>`;
