@@ -19,7 +19,7 @@ export class TasksView extends View {
                 </div>
             </div>
 
-            <div class="tasks-sections-grid" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 3rem; align-items: flex-start;">
+            <div class="tasks-sections-grid">
                 
                 <!-- SECCIÓN 1: ACTIVIDADES ASIGNADAS (DEL PROYECTO) -->
                 <section class="assigned-tasks-section">
@@ -39,7 +39,7 @@ export class TasksView extends View {
                 </section>
 
                 <!-- SECCIÓN 2: MIS ACTIVIDADES (PENDIENTES LIBRES) -->
-                <section class="personal-tasks-section glass-effect" style="padding: 2rem; border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
+                <section class="personal-tasks-section glass-effect" style="border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
                     <div class="section-header" style="margin-bottom: 1.5rem;">
                         <h2 style="font-size: 1.4rem;">📝 Mis Actividades</h2>
                         <p style="font-size: 0.85rem; color: var(--text-dim);">Lista libre de pendientes personales</p>

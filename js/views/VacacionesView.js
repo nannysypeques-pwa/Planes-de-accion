@@ -20,13 +20,13 @@ export class VacacionesView extends View {
                 </div>
             </div>
 
-            <div class="glass-effect" style="margin-top: 2rem; border-radius: var(--radius-lg); padding: 2.5rem; display: flex; flex-direction: column; gap: 2rem;">
+            <div class="glass-effect glass-container-padding" style="margin-top: 2rem; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 2rem;">
                 
-                <div style="display: flex; gap: 2rem; flex-wrap: wrap; width: 100%;">
+                <div class="responsive-flex-layout">
                     
                     ${user.role !== 'gerente' ? `
                     <!-- Columna Izquierda: Información y Solicitud -->
-                    <div style="flex: 1; min-width: 300px;">
+                    <div class="responsive-column">
                         <div id="vacation-stats-card" style="background: linear-gradient(135deg, var(--rosa-light) 0%, #fff 100%); border-radius: var(--radius-md); padding: 2rem; box-shadow: 0 10px 25px rgba(210, 50, 143, 0.08); border: 1px solid rgba(210, 50, 143, 0.1); margin-bottom: 2rem; position: relative; overflow: hidden;">
                             <div style="position: absolute; right: -20px; top: -20px; font-size: 8rem; opacity: 0.05;">🏖️</div>
                             <h3 style="color: var(--azul-deep); font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Mis Días Disponibles</h3>
@@ -70,9 +70,9 @@ export class VacacionesView extends View {
                         </div>
                     </div>
                     ` : ''}
-
+ 
                     <!-- Columna Derecha: Historial y Bandeja de Aprobación -->
-                    <div style="flex: ${user.role === 'gerente' ? '1' : '2'}; min-width: 350px;">
+                    <div class="responsive-column" style="flex: ${user.role === 'gerente' ? '1' : '2'};">
                         ${user.role === 'gerente' ? `
                             <div id="vac-chrono-wrapper" style="margin-bottom: 3rem;">
                                 <h3 style="margin-bottom: 1rem; color: var(--azul-deep);">Cronograma de Vacaciones</h3>
@@ -86,9 +86,9 @@ export class VacacionesView extends View {
                             <div id="approvals-section" style="${user.role !== 'gerente' ? 'margin-bottom: 3rem;' : ''}">
                                 <h3 style="margin-bottom: 1rem; color: var(--azul-deep); display: flex; justify-content: space-between; align-items: center;">
                                     Bandeja de Aprobaciones
-                                    <span class="badge" style="background: var(--amarillo-light); color: var(--amarillo-strong);">Por Autorizar</span>
+                                    <span class="badge" style="background: var(--amarillo-light); color: var(--amarillo-strong); font-size: 0.7rem;">Por Autorizar</span>
                                 </h3>
-                                <div id="approvals-list" style="display: ${user.role === 'gerente' ? 'grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr))' : 'flex; flex-direction: column'}; gap: 1rem;">
+                                <div id="approvals-list" style="display: ${user.role === 'gerente' ? 'grid' : 'flex'}; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; flex-direction: column;">
                                     <div class="loading-inline">Cargando solicitudes...</div>
                                 </div>
                             </div>

@@ -3224,6 +3224,30 @@ input[type="date"] {
     margin-bottom: 1.5rem;
 }
 
+/* Responsive Utilities for Views */
+.responsive-flex-layout {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.responsive-column {
+    flex: 1;
+    min-width: 0; /* Important: allow shrink */
+}
+
+.glass-container-padding {
+    padding: 2.5rem;
+}
+
+.tasks-sections-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 3rem;
+    align-items: flex-start;
+}
+
 /* Responsividad General */
 @media (max-width: 992px) {
     header {
@@ -3305,6 +3329,49 @@ input[type="date"] {
 
     .task-card-premium {
         padding: 1rem;
+    }
+
+    /* Fix específicos para vistas aprobadas en el plan */
+    .vacaciones-view {
+        padding: 1rem !important;
+    }
+
+    .glass-container-padding {
+        padding: 1.2rem !important;
+        gap: 1.5rem !important;
+    }
+
+    .responsive-flex-layout {
+        flex-direction: column;
+        gap: 1.5rem !important;
+    }
+
+    .responsive-column {
+        width: 100% !important;
+    }
+
+    .tasks-sections-grid {
+        grid-template-columns: 1fr !important;
+        gap: 2rem !important;
+    }
+
+    #vacation-stats-card {
+        padding: 1.5rem !important;
+    }
+
+    .view-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 2rem !important;
+    }
+
+    .view-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .personal-tasks-section {
+        padding: 1.2rem !important;
     }
 }
 

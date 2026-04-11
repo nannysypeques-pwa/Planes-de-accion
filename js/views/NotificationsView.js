@@ -7,8 +7,8 @@ export class NotificationsView extends View {
         
         container.innerHTML = `
             <div class="view-header">
-                <h1>Notificaciones y Centro de Mensajes</h1>
-                <button class="secondary-btn sm" id="mark-all-read">Marcar todas como leídas</button>
+                <h1>Notificaciones</h1>
+                <button class="secondary-btn sm" id="mark-all-read">Marcar leídas</button>
             </div>
 
             <div class="notifications-list" id="notif-container">
