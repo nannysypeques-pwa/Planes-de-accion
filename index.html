@@ -93,20 +93,15 @@
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         if (isLocal) {
-            // Activar Modo Debug para trabajar con "Enforce" encendido
-            // Esto generará un token en la consola (F12) que debes registrar en Firebase
+            // Modo Debug para Local: Activa el token de depuración en la consola
             self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-            appCheck.activate(
-                new firebase.appCheck.DebugAppCheckProvider(),
-                true
-            );
-            console.log("🛠️ App Check en modo DEBUG (Local). Copia el token de la consola abajo para registrarlo en Firebase.");
-        } else {
-            appCheck.activate(
-                new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAp9Ckh3BqZw'),
-                true // Auto-refresh de tokens
-            );
+            console.log("🛠️ App Check en modo DEBUG (Local).");
         }
+
+        appCheck.activate(
+            new firebase.appCheck.ReCaptchaV3Provider('6LeydbEsAAAAAMkcF6nQvgDzJ4OsHAp9Ckh3BqZw'),
+            true // Auto-refresh de tokens
+        );
 
         const db = firebase.firestore();
         const auth = firebase.auth();
