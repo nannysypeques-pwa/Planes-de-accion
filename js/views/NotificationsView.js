@@ -29,11 +29,17 @@ export class NotificationsView extends View {
         try {
             const snapshot = await db.collection('notifications')
                 .where('userId', '==', this.app.currentUser.uid)
-                .orderBy('createdAt', 'desc')
-                .limit(20)
                 .get();
             
-            const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Ordenar localmente para evitar errores de índice compuesto en Firestore si no está creado
+            const notifs = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => {
+                    const dateA = a.createdAt?.toDate() || 0;
+                    const dateB = b.createdAt?.toDate() || 0;
+                    return dateB - dateA;
+                })
+                .slice(0, 20);
 
             if (notifs.length === 0) {
                 container.innerHTML = '<div class="empty-state">No tienes notificaciones nuevas.</div>';

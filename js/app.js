@@ -296,6 +296,7 @@ class App {
 
     showNavigation() {
         this.header.classList.remove('hidden');
+        
         const role = this.currentUser.role;
 
         // IDs de navegación Desktop y Mobile

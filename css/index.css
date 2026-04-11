@@ -3402,8 +3402,8 @@ input[type="date"] {
 
 .notif-btn {
     position: relative;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: white;
+    border: 1px solid var(--border);
     width: 42px;
     height: 42px;
     border-radius: 12px;
@@ -3414,13 +3414,14 @@ input[type="date"] {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1.2rem;
     padding: 0;
-    color: var(--text-main);
+    color: var(--rosa-strong);
+    box-shadow: 0 4px 12px rgba(210, 50, 143, 0.1);
 }
 
 .notif-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--bg-light);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 8px 20px rgba(210, 50, 143, 0.15);
 }
 
 .badge-count {
