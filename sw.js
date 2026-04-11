@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sistema-interno-v1';
+const CACHE_NAME = 'sistema-interno-v2';
 const ASSETS = [
   './',
   './index.html',
