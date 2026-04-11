@@ -1,6 +1,7 @@
+/**
  * Proporciona métodos para interactuar con la base de datos de la agencia.
  */
-import { SecurityUtils } from './utils.js';
+import { SecurityUtils } from '../utils.js';
 
 export const FirebaseService = {
     // USUARIOS Y ROLES
