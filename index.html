@@ -45,6 +45,11 @@
             </nav>
             <div id="user-controls" class="controls">
                 <button id="logout-btn" class="secondary-btn sm">Cerrar Sesión</button>
+                <button id="menu-toggle" class="hamburger-btn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             </div>
         </header>
 
@@ -55,14 +60,33 @@
             </div>
         </main>
 
-        <nav id="mobile-nav" class="glass-effect hidden">
-            <a href="#dashboard" class="m-nav-link" title="Dashboard">🏠</a>
-            <a href="#plans" class="m-nav-link" title="Mis planes">📋</a>
-            <a href="#tasks" class="m-nav-link" title="Mis tareas">✅</a>
-            <a href="#vacaciones" class="m-nav-link" title="Vacaciones">🏖️</a>
-            <a href="#cronograma" class="m-nav-link" title="Mi Cronograma">📅</a>
-            <a href="#notifications" class="m-nav-link" title="Notificaciones">🔔</a>
+        <nav id="side-menu" class="side-drawer glass-effect">
+            <div class="side-menu-header">
+                <div class="logo">MENU</div>
+                <button id="close-menu" class="close-btn">&times;</button>
+            </div>
+            <nav id="mobile-nav-links">
+                <!-- Links will be cloned or managed via app.js or CSS -->
+                <a href="#dashboard" class="side-link">🏠 Dashboard</a>
+                <a href="#plans" class="side-link">📋 Mis planes</a>
+                <a href="#tasks" class="side-link">✅ Mis tareas</a>
+                <a href="#cronograma" class="side-link">📅 Mi Cronograma</a>
+                <a href="#vacaciones" class="side-link">🏖️ Vacaciones</a>
+                <a href="#notifications" class="side-link">🔔 Notificaciones</a>
+                <a href="#members" id="side-nav-members" class="side-link admin-only hidden">👥 Gestión Equipo</a>
+                <hr class="menu-divider">
+                <button id="logout-btn-mobile" class="side-link logout-link">🚪 Cerrar Sesión</button>
+            </nav>
         </nav>
+
+        <div id="offline-overlay" class="hidden">
+            <div class="offline-content glass-effect">
+                <div class="offline-icon">📡❌</div>
+                <h2>Sin Conexión</h2>
+                <p>Por favor, revisa tu internet para continuar.</p>
+                <button onclick="window.location.reload()" class="primary-btn">Reintentar</button>
+            </div>
+        </div>
     </div>
 
     <!-- Firebase SDKs -->
@@ -103,6 +127,17 @@
 
     <!-- App Logic -->
     <script type="module" src="js/app.js"></script>
+
+    <!-- Register Service Worker for PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado:', reg.scope))
+                    .catch(err => console.log('Error al registrar SW:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

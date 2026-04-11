@@ -1,16 +1,24 @@
 {
-  "name": "Sistema Interno Agencia",
-  "short_name": "SISTEMA",
-  "description": "Sistema de gestión de planes de acción y actividades operativas.",
+  "name": "Nannys y Peques - Gestión",
+  "short_name": "GestorNYP",
+  "description": "Sistema de gestión de planes de acción y actividades operativas - Nannys y Peques.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0a0a0b",
-  "theme_color": "#5c62ec",
+  "background_color": "#fff5f9",
+  "theme_color": "#EC80C6",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "logo-sin-fondo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "logo-sin-fondo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
     }
   ]
 }

@@ -3088,3 +3088,241 @@ input[type="date"] {
     font-size: 1.1rem;
     font-weight: 800;
 }
+
+/* ============================================================ */
+/*                MOBILE OPTIMIZATION & SIDE MENU               */
+/* ============================================================ */
+
+/* Hamburger Button */
+.hamburger-btn {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 2100;
+    margin-left: 1rem;
+}
+
+.hamburger-btn span {
+    width: 30px;
+    height: 3px;
+    background: var(--rosa-strong);
+    border-radius: 10px;
+    transition: all 0.3s linear;
+    position: relative;
+    transform-origin: 1px;
+}
+
+/* Side Drawer Menu */
+.side-drawer {
+    position: fixed;
+    top: 0;
+    right: -320px; /* Hidden by default */
+    width: 300px;
+    height: 100vh;
+    z-index: 2050;
+    transition: var(--transition);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+}
+
+.side-drawer.open {
+    right: 0;
+}
+
+.side-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-dim);
+    cursor: pointer;
+}
+
+#mobile-nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.side-link {
+    text-decoration: none;
+    color: var(--text-main);
+    padding: 1rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.side-link:hover {
+    background: var(--rosa-light);
+    color: var(--rosa-strong);
+    transform: translateX(5px);
+}
+
+.logout-link {
+    margin-top: 1rem;
+    background: rgba(239, 68, 68, 0.05);
+    color: #ef4444;
+    border: none;
+    width: 100%;
+}
+
+.menu-divider {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 1rem 0;
+}
+
+/* Offline Overlay */
+#offline-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(45, 10, 26, 0.5);
+    backdrop-filter: blur(10px);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.offline-content {
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: var(--shadow-strong);
+}
+
+.offline-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Responsividad General */
+@media (max-width: 992px) {
+    header {
+        padding: 0 2rem;
+        margin: 1rem;
+    }
+
+    #main-nav {
+        display: none; /* Todo a la hamburguesa */
+    }
+
+    .hamburger-btn {
+        display: flex;
+    }
+}
+
+@media (max-width: 768px) {
+    .logo {
+        font-size: 1.1rem;
+    }
+
+    .brand-subtitle {
+        display: none; /* Ahorrar espacio */
+    }
+
+    header {
+        height: 70px;
+        padding: 0 1.2rem;
+    }
+
+    #logout-btn {
+        display: none; /* Se mueve a la hamburguesa */
+    }
+
+    main {
+        padding: 1rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .plan-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .plan-main-info {
+        padding: 1.5rem;
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+    }
+
+    .modal-content {
+        padding: 1.5rem;
+        width: 95%;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .action-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .plan-item {
+        padding: 1.2rem;
+    }
+
+    .task-card-premium {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+
+    .logo {
+        font-size: 1rem;
+    }
+
+    .auth-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .logo-large {
+        font-size: 2rem;
+    }
+}
+

@@ -18,7 +18,8 @@ class App {
     constructor() {
         this.container = document.getElementById('view-container');
         this.header = document.getElementById('main-header');
-        this.mobileNav = document.getElementById('mobile-nav');
+        this.sideMenu = document.getElementById('side-menu');
+        this.offlineOverlay = document.getElementById('offline-overlay');
         this.currentUser = null;
         
         this.routes = {
@@ -39,11 +40,72 @@ class App {
 
     async init() {
         console.log("Initializing App...");
-        // Placeholder for Firebase Auth listener
         this.handleAuthState();
+        this.setupNavigation();
+        this.setupConnectivity();
         
         window.addEventListener('popstate', () => this.router());
         this.router();
+    }
+
+    setupNavigation() {
+        // Toggle Menú Hamburguesa
+        const toggleBtn = document.getElementById('menu-toggle');
+        const closeBtn = document.getElementById('close-menu');
+        
+        if (toggleBtn) {
+            toggleBtn.onclick = () => this.sideMenu.classList.toggle('open');
+        }
+        
+        if (closeBtn) {
+            closeBtn.onclick = () => this.sideMenu.classList.remove('open');
+        }
+
+        // Cerrar menú al hacer click en un link
+        document.querySelectorAll('.side-link').forEach(link => {
+            link.addEventListener('click', () => {
+                this.sideMenu.classList.remove('open');
+            });
+        });
+
+        // Logout Mobile
+        const logoutMobile = document.getElementById('logout-btn-mobile');
+        if (logoutMobile) {
+            logoutMobile.onclick = () => this.logout();
+        }
+
+        // Logout Desktop (Existing)
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.onclick = () => this.logout();
+        }
+    }
+
+    setupConnectivity() {
+        window.addEventListener('online', () => this.updateOnlineStatus());
+        window.addEventListener('offline', () => this.updateOnlineStatus());
+        this.updateOnlineStatus(); // Estado inicial
+    }
+
+    updateOnlineStatus() {
+        if (navigator.onLine) {
+            this.offlineOverlay.classList.add('hidden');
+        } else {
+            this.offlineOverlay.classList.remove('hidden');
+        }
+    }
+
+    async logout() {
+        try {
+            await auth.signOut();
+            localStorage.removeItem('user_session');
+            this.currentUser = null;
+            this.hideNavigation();
+            this.sideMenu.classList.remove('open');
+            this.navigateTo('login');
+        } catch (e) {
+            console.error("Error al cerrar sesión:", e);
+        }
     }
 
     handleAuthState() {
@@ -139,43 +201,33 @@ class App {
         this.header.classList.remove('hidden');
         const role = this.currentUser.role;
 
-        // Reset visibility
-        document.getElementById('nav-dashboard').classList.remove('hidden');
-        document.getElementById('nav-plans').classList.remove('hidden');
-        document.getElementById('nav-tasks').classList.remove('hidden');
-        document.getElementById('nav-cronograma').classList.remove('hidden');
-        document.getElementById('nav-vacaciones').classList.remove('hidden');
-        document.getElementById('nav-members').classList.add('hidden');
-
-        if (role === 'gerente') {
-            document.getElementById('nav-members').classList.remove('hidden');
-        } else if (role === 'coordinadora') {
-            // Dashboard, Planes, Tareas (Ya configurado por default arriba)
-        } else if (role === 'miembro') {
-            document.getElementById('nav-dashboard').classList.add('hidden');
-        }
-
-        if (window.innerWidth <= 768) {
-            this.mobileNav.classList.remove('hidden');
-            // Opcional: Filtrar también en móvil si es necesario
-        }
+        // IDs de navegación Desktop y Mobile
+        const navIds = ['dashboard', 'plans', 'tasks', 'cronograma', 'vacaciones', 'members'];
         
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.onclick = () => {
-                auth.signOut().then(() => {
-                    localStorage.removeItem('user_session');
-                    this.currentUser = null;
-                    this.hideNavigation();
-                    this.navigateTo('login');
-                });
-            };
-        }
+        navIds.forEach(id => {
+            const deskEl = document.getElementById(`nav-${id}`);
+            const sideEl = document.getElementById(`side-nav-${id}`); // Solo para members que tiene ID
+            
+            // Ocultar por defecto si es miembro y es dashboard/members
+            let shouldHide = (role === 'miembro' && (id === 'dashboard' || id === 'members'));
+            // Ocultar members si no es gerente
+            if (id === 'members' && role !== 'gerente') shouldHide = true;
+
+            if (deskEl) {
+                shouldHide ? deskEl.classList.add('hidden') : deskEl.classList.remove('hidden');
+            }
+            
+            // Para el menú lateral, usamos selectores de atributo o clases si no hay ID único
+            const sideLink = document.querySelector(`.side-link[href="#${id}"]`) || document.getElementById(`side-nav-${id}`);
+            if (sideLink) {
+                shouldHide ? sideLink.classList.add('hidden') : sideLink.classList.remove('hidden');
+            }
+        });
     }
 
     hideNavigation() {
         this.header.classList.add('hidden');
-        this.mobileNav.classList.add('hidden');
+        this.sideMenu.classList.remove('open');
     }
 }
 
