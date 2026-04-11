@@ -633,7 +633,30 @@ export class VacacionesView extends View {
                 approvedBy: this.app.currentUser.uid
             });
 
-            ToastService.success(action === 'approve' ? "Solicitud aprobada correctamente" : "Solicitud rechazada");
+            // Notificar al solicitante
+            const reqDoc = await db.collection('vacation_requests').doc(id).get();
+            const reqData = reqDoc.data();
+            const applicantId = reqData.uid;
+            
+            let notifTitle = "Actualización de Vacaciones";
+            let notifBody = "";
+            if (newStatus === 'aprobado_gerencia') {
+                notifTitle = "✅ Vacaciones Autorizadas";
+                notifBody = `Tu solicitud para el periodo ${reqData.start_date || reqData.full_dates} ha sido autorizada por gerencia.`;
+            } else if (newStatus === 'aprobado_coordinador') {
+                notifTitle = "⏳ Vacaciones en Trámite";
+                notifBody = `Tu coordinador ha aprobado tu solicitud. Pendiente de validación final por gerencia.`;
+            } else if (newStatus === 'rechazado') {
+                notifTitle = "❌ Solicitud Rechazada";
+                notifBody = `Tu solicitud de vacaciones ha sido rechazada. Por favor contacta a tu líder.`;
+            }
+
+            if (notifBody) {
+                const { FirebaseService } = await import('../services/FirebaseService.js');
+                await FirebaseService.sendNotification(applicantId, notifTitle, notifBody, "#vacaciones");
+            }
+
+            ToastService.success(action === 'approve' ? "Solicitud aprobada y notificada" : "Solicitud rechazada y notificada");
             // onSnapshot actualiza la bandeja en tiempo real
             
         } catch (e) {

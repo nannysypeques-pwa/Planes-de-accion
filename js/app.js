@@ -21,6 +21,7 @@ class App {
         this.sideMenu = document.getElementById('side-menu');
         this.offlineOverlay = document.getElementById('offline-overlay');
         this.currentUser = null;
+        this.notifUnsubscribe = null;
         
         this.routes = {
             'login': AuthView,
@@ -79,6 +80,12 @@ class App {
         if (logoutBtn) {
             logoutBtn.onclick = () => this.logout();
         }
+
+        // Click en la campana
+        const bellBtn = document.getElementById('notif-bell');
+        if (bellBtn) {
+            bellBtn.onclick = () => this.navigateTo('notifications');
+        }
     }
 
     setupConnectivity() {
@@ -124,6 +131,9 @@ class App {
                     this.currentUser = profile;
                     localStorage.setItem('user_session', JSON.stringify(profile));
                     this.showNavigation();
+                    this.setupNotificationsListener();
+                    this.checkTaskDeadlines();
+                    
                     // Solo navegar si estamos en login o en blanco
                     const hash = window.location.hash.replace('#', '');
                     if (!hash || hash === 'login') {
@@ -137,12 +147,99 @@ class App {
                 }
             } else {
                 // No hay sesión activa
+                if (this.notifUnsubscribe) {
+                    this.notifUnsubscribe();
+                    this.notifUnsubscribe = null;
+                }
                 this.currentUser = null;
                 localStorage.removeItem('user_session');
                 this.hideNavigation();
                 this.navigateTo('login');
             }
         });
+    }
+
+    setupNotificationsListener() {
+        if (!this.currentUser) return;
+        
+        // Limpiar listener previo si existe
+        if (this.notifUnsubscribe) this.notifUnsubscribe();
+
+        const badge = document.getElementById('notif-badge');
+        
+        this.notifUnsubscribe = db.collection('notifications')
+            .where('userId', '==', this.currentUser.uid)
+            .where('read', '==', false)
+            .onSnapshot(snapshot => {
+                const count = snapshot.size;
+                if (badge) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    if (count > 0) {
+                        badge.classList.remove('hidden');
+                        badge.classList.add('pulse');
+                    } else {
+                        badge.classList.add('hidden');
+                        badge.classList.remove('pulse');
+                    }
+                }
+            }, error => console.error("Error en listener notificaciones:", error));
+    }
+
+    async checkTaskDeadlines() {
+        if (!this.currentUser) return;
+        
+        try {
+            const { FirebaseService } = await import('./services/FirebaseService.js');
+            const tasks = await FirebaseService.getTasksByUserId(this.currentUser.uid);
+            const now = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(now.getDate() + 1);
+            
+            for (const task of tasks) {
+                if (task.status === 'completado' || !task.due_date) continue;
+                
+                const dueDate = new Date(task.due_date + 'T12:00:00');
+                const diffTime = dueDate - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                let type = '';
+                let title = '';
+                let body = '';
+
+                if (diffDays < 0) {
+                    type = 'overdue';
+                    title = "⚠️ Tarea Vencida";
+                    body = `La tarea "${task.title}" ya venció. Por favor actualiza su avance.`;
+                } else if (diffDays <= 2) {
+                    type = 'upcoming';
+                    title = "📅 Próxima a vencer";
+                    body = `La tarea "${task.title}" vence pronto (${task.due_date}).`;
+                }
+
+                if (type) {
+                    // Verificar si ya notificamos sobre este evento para esta tarea
+                    const notifId = `task_${task.id}_${type}`;
+                    const alreadySent = await db.collection('notifications')
+                        .where('userId', '==', this.currentUser.uid)
+                        .where('eventId', '==', notifId)
+                        .get();
+
+                    if (alreadySent.empty) {
+                        await db.collection('notifications').add({
+                            userId: this.currentUser.uid,
+                            eventId: notifId,
+                            title,
+                            body,
+                            link: '#tasks',
+                            read: false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error chequeando plazos:", error);
+        }
     }
 
     navigateTo(path) {
