@@ -20,6 +20,7 @@ class App {
         this.header = document.getElementById('main-header');
         this.sideMenu = document.getElementById('side-menu');
         this.offlineOverlay = document.getElementById('offline-overlay');
+        this.appLoadingScreen = document.getElementById('app-loading-screen');
         this.currentUser = null;
         this.notifUnsubscribe = null;
         
@@ -37,6 +38,9 @@ class App {
         };
 
         this.init();
+        
+        // Timer de seguridad: Si después de 8 segundos no se ha ocultado, lo forzamos.
+        setTimeout(() => this.hideAppLoading(), 8000);
     }
 
     async init() {
@@ -83,8 +87,127 @@ class App {
 
         // Click en la campana
         const bellBtn = document.getElementById('notif-bell');
+        const notifDropdown = document.getElementById('notif-dropdown');
+        
         if (bellBtn) {
-            bellBtn.onclick = () => this.navigateTo('notifications');
+            bellBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.toggleNotifDropdown();
+            };
+        }
+
+        // Cerrar dropdown al hacer click fuera
+        document.addEventListener('click', (e) => {
+            if (notifDropdown && !notifDropdown.contains(e.target) && e.target !== bellBtn) {
+                notifDropdown.classList.add('hidden');
+            }
+        });
+
+        const markAllBtn = document.getElementById('mark-all-read');
+        if (markAllBtn) {
+            markAllBtn.onclick = () => this.markAllNotificationsAsRead();
+        }
+
+        const viewAllBtn = document.getElementById('view-all-notifs');
+        if (viewAllBtn) {
+            viewAllBtn.onclick = () => {
+                notifDropdown.classList.add('hidden');
+                this.navigateTo('notifications');
+            };
+        }
+    }
+
+    async toggleNotifDropdown() {
+        const dropdown = document.getElementById('notif-dropdown');
+        if (!dropdown) return;
+
+        const isHidden = dropdown.classList.toggle('hidden');
+        if (!isHidden) {
+            this.loadDropdownNotifications();
+        }
+    }
+
+    async loadDropdownNotifications() {
+        const list = document.getElementById('notif-dropdown-list');
+        if (!list || !this.currentUser) return;
+
+        list.innerHTML = '<div class="loading-inline" style="padding: 2rem;">Cargando...</div>';
+
+        try {
+            // Quitamos el orderBy del servidor para evitar errores de índice faltante
+            const snapshot = await db.collection('notifications')
+                .where('userId', '==', this.currentUser.uid)
+                .limit(20)
+                .get();
+
+            if (snapshot.empty) {
+                list.innerHTML = '<div class="empty-state" style="padding: 2rem; font-size: 0.9rem;">No tienes notificaciones.</div>';
+                return;
+            }
+
+            // Ordenamos en memoria (más reciente primero)
+            const sortedNotifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            sortedNotifs.sort((a, b) => {
+                const dateA = a.createdAt?.toDate() || new Date(0);
+                const dateB = b.createdAt?.toDate() || new Date(0);
+                return dateB - dateA;
+            });
+
+            list.innerHTML = sortedNotifs.slice(0, 10).map(n => {
+                const date = n.createdAt?.toDate().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) || '';
+                const isUnread = !n.read;
+                
+                return `
+                    <div class="dropdown-notif-item ${isUnread ? 'unread' : ''}" data-id="${n.id}" data-link="${n.link || ''}">
+                        <div class="dropdown-notif-icon">${(n.title && n.title.includes('Tarea')) ? '📝' : '🔔'}</div>
+                        <div class="dropdown-notif-body">
+                            <h4>${n.title}</h4>
+                            <p>${n.body}</p>
+                            <span class="dropdown-notif-time">${date}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Click en item
+            list.querySelectorAll('.dropdown-notif-item').forEach(item => {
+                item.onclick = async () => {
+                    const id = item.dataset.id;
+                    const link = item.dataset.link;
+                    
+                    // Marcar como leída
+                    await db.collection('notifications').doc(id).update({ read: true });
+                    
+                    document.getElementById('notif-dropdown').classList.add('hidden');
+                    if (link) {
+                        this.navigateTo(link.replace('#', ''));
+                    }
+                };
+            });
+
+        } catch (error) {
+            console.error("Error loading dropdown notifs:", error);
+            list.innerHTML = '<div class="error-msg">Error al cargar.</div>';
+        }
+    }
+
+    async markAllNotificationsAsRead() {
+        if (!this.currentUser) return;
+        try {
+            const snapshot = await db.collection('notifications')
+                .where('userId', '==', this.currentUser.uid)
+                .where('read', '==', false)
+                .get();
+
+            const batch = db.batch();
+            snapshot.docs.forEach(doc => {
+                batch.update(doc.ref, { read: true });
+            });
+
+            await batch.commit();
+            this.loadDropdownNotifications();
+        } catch (error) {
+            console.error("Error marking all as read:", error);
         }
     }
 
@@ -126,6 +249,7 @@ class App {
                         // Usuario autenticado en Firebase Auth pero sin perfil en Firestore
                         await auth.signOut();
                         this.navigateTo('login');
+                        this.hideAppLoading();
                         return;
                     }
                     this.currentUser = profile;
@@ -143,6 +267,7 @@ class App {
                     }
                 } catch (e) {
                     console.error('Error cargando perfil de usuario:', e);
+                    this.hideAppLoading();
                     this.navigateTo('login');
                 }
             } else {
@@ -156,7 +281,22 @@ class App {
                 this.hideNavigation();
                 this.navigateTo('login');
             }
+            // Ocultar pantalla de carga inicial siempre después del primer chequeo de auth
+            this.hideAppLoading();
         });
+    }
+
+    hideAppLoading() {
+        if (this.appLoadingScreen) {
+            this.appLoadingScreen.classList.add('hidden');
+            // Eliminar del DOM después de la transición para optimizar
+            setTimeout(() => {
+                if (this.appLoadingScreen && this.appLoadingScreen.parentNode) {
+                    this.appLoadingScreen.parentNode.removeChild(this.appLoadingScreen);
+                }
+                this.appLoadingScreen = null; // Limpiar referencia
+            }, 1000);
+        }
     }
 
     setupNotificationsListener() {

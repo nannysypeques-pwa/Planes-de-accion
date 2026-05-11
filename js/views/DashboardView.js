@@ -275,6 +275,15 @@ export class DashboardView extends View {
             const membersMap = {};
             allMembers.forEach(m => { membersMap[m.uid] = m; });
 
+            // NUEVO: Obtener tareas para cálculos dinámicos
+            const planIds = plans.map(p => p.id);
+            const allTasks = await FirebaseService.getTasksByPlanIds(planIds);
+            const tasksByPlan = {};
+            allTasks.forEach(t => {
+                if (!tasksByPlan[t.plan_id]) tasksByPlan[t.plan_id] = [];
+                tasksByPlan[t.plan_id].push(t);
+            });
+
             const headerHtml = `
                 <div class="plans-list-header">
                     <div>Nombre del proyecto</div>
@@ -297,6 +306,53 @@ export class DashboardView extends View {
                 // Limitar equipo a 3 avatares + indicador
                 const visibleTeam = teamIds.slice(0, 3);
                 const extraTeam = teamIds.length > 3 ? teamIds.length - 3 : 0;
+
+                // LÓGICA DINÁMICA DE ESTADO Y PROGRESO
+                const tasks = tasksByPlan[p.id] || [];
+                let dynamicStatus = p.status || 'pendiente';
+                let dynamicProgress = p.progress || 0;
+
+                if (tasks.length > 0) {
+                    const now = new Date();
+                    now.setHours(0,0,0,0);
+
+                    // 1. Calcular Estado por mayoría
+                    const counts = tasks.reduce((acc, t) => {
+                        acc[t.status] = (acc[t.status] || 0) + 1;
+                        return acc;
+                    }, {});
+
+                    const total = tasks.length;
+                    const completadas = counts['completado'] || 0;
+                    const enProceso = counts['en_proceso'] || 0;
+                    const pendientes = counts['pendiente'] || 0;
+                    const canceladas = counts['cancelada'] || 0;
+
+                    if (completadas === total) {
+                        dynamicStatus = 'completado';
+                    } else {
+                        // Determinar el más frecuente (excluyendo canceladas si hay otras)
+                        const stats = [
+                            { s: 'en_proceso', c: enProceso },
+                            { s: 'pendiente', c: pendientes },
+                            { s: 'completado', c: completadas },
+                            { s: 'cancelada', c: canceladas }
+                        ];
+                        stats.sort((a, b) => b.c - a.c);
+                        dynamicStatus = stats[0].s;
+                    }
+
+                    // 2. Calcular Progreso (% Cronograma)
+                    // Fórmula: (Completadas * 1 + EnProceso * 0.5 - VencidasNoHechas * 0.1) / Total
+                    const vencidas = tasks.filter(t => {
+                        if (t.status === 'completado' || !t.due_date) return false;
+                        const d = new Date(t.due_date + 'T00:00:00');
+                        return d < now;
+                    }).length;
+
+                    const score = ((completadas * 1) + (enProceso * 0.5) - (vencidas * 0.1)) / total;
+                    dynamicProgress = Math.max(0, Math.min(100, Math.round(score * 100)));
+                }
 
                 return `
                 <div class="plan-list-row animate-up view-detail" data-id="${p.id}" style="animation-delay: ${i * 0.05}s;">
@@ -322,15 +378,15 @@ export class DashboardView extends View {
                     <div class="plan-col" data-label="Término">${dueDate}</div>
                     
                     <div class="plan-col" data-label="Estado">
-                        <span class="status-pill status-${p.status || 'pendiente'}">${(p.status || 'pendiente').replace('_', ' ')}</span>
+                        <span class="status-pill status-${dynamicStatus}">${dynamicStatus.replace('_', ' ')}</span>
                     </div>
                     
                     <div class="plan-col" data-label="Cronograma">
                         <div class="progress-container">
                             <div class="progress-track">
-                                <div class="progress-fill" style="width: ${p.progress || 0}%"></div>
+                                <div class="progress-fill" style="width: ${dynamicProgress}%"></div>
                             </div>
-                            <span class="progress-text">${p.progress || 0}%</span>
+                            <span class="progress-text">${dynamicProgress}%</span>
                         </div>
                     </div>
                 </div>

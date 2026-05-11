@@ -32,65 +32,79 @@ export class ActionPlanCreateView extends View {
             </div>
 
             <form id="plan-form" class="glass-effect form-card">
+                <!-- D1 & D2: Equipo y Definición del Problema -->
                 <div class="form-section">
-                    <h3>1. Definición del Problema</h3>
+                    <div class="section-badge">D1 & D2</div>
+                    <h3>Equipo y Definición del Problema</h3>
                     <div class="input-group">
-                        <label>Título del Plan</label>
+                        <label>Título del Plan (Estratégico)</label>
                         <input type="text" id="title" required placeholder="Ej: Optimización de tiempos en entrega">
                     </div>
                     <div class="input-group">
-                        <label>Descripción de la Problemática</label>
+                        <label>Descripción de la Problemática (¿Qué está pasando?)</label>
                         <textarea id="problem" class="custom-textarea" required placeholder="Describe el problema detectado..."></textarea>
                     </div>
+
                     <div class="input-group">
                         <label>KPI NOK (Estado actual del indicador)</label>
                         <input type="text" id="kpi_nok" required placeholder="Ej: 65% de entregas a tiempo">
                     </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Líder de Proyecto (Responsable)</label>
+                            ${role === 'miembro' ? `
+                                <select id="lead_id" required style="pointer-events: none; background: #f8fafc;">
+                                    <option value="${this.app.currentUser.uid}" selected>${this.app.currentUser.name} (Tú)</option>
+                                </select>
+                            ` : `
+                                <select id="lead_id" required>
+                                    <option value="">Seleccione un líder...</option>
+                                    ${Object.keys(groups).sort().map(area => `
+                                        <optgroup label="Área: ${area}">
+                                            ${groups[area].map(m => `<option value="${m.uid}">${m.name} (${m.role})</option>`).join('')}
+                                        </optgroup>
+                                    `).join('')}
+                                </select>
+                            `}
+                        </div>
+                        ${role === 'gerente' ? `
+                        <div class="input-group">
+                            <label>Coordinador (Seguimiento)</label>
+                            <select id="coordinator_id">
+                                <option value="">Ninguno...</option>
+                                ${coordinators.map(c => `<option value="${c.uid}">${c.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        ` : ''}
+                    </div>
                 </div>
 
+                <!-- D4: Análisis de Causa Raíz (5 Porqués) -->
                 <div class="form-section">
-                    <h3>2. Objetivos</h3>
-                    <div class="input-group">
-                        <label>Objetivo Principal</label>
-                        <textarea id="objective" class="custom-textarea" required placeholder="¿Qué queremos lograr?"></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label>KPI esperado (Meta a alcanzar)</label>
-                        <input type="text" id="kpi_expected" required placeholder="Ej: 95% de entregas a tiempo">
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>3. Asignación de Responsabilidad</h3>
+                    <div class="section-badge">D4</div>
+                    <h3>Análisis de Causa Raíz (Los 5 Porqués)</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Profundiza en la causa raíz preguntando "¿Por qué?" sucesivamente.</p>
                     
-                    ${role === 'gerente' ? `
-                    <div class="input-group">
-                        <label>Coordinador de Área (Seguimiento)</label>
-                        <select id="coordinator_id">
-                            <option value="">Seleccione coordinador si aplica...</option>
-                            ${coordinators.map(c => `<option value="${c.uid}">${c.name}</option>`).join('')}
-                        </select>
-                        <small>Recibirá notificaciones de seguimiento sin ser el responsable directo.</small>
+                    <div id="whys-container" class="whys-container">
+                        <!-- Se cargan dinámicamente -->
                     </div>
-                    ` : ''}
+                    <button type="button" id="add-why-btn" class="add-why-btn">+ Agregar otro Por qué</button>
 
-                    <div class="input-group">
-                        <label>Líder de Proyecto (Responsable)</label>
-                        ${role === 'miembro' ? `
-                            <select id="lead_id" required style="pointer-events: none; background: #f8fafc;">
-                                <option value="${this.app.currentUser.uid}" selected>${this.app.currentUser.name} (Tú)</option>
-                            </select>
-                            <small style="color: var(--rosa-strong); display: block; margin-top: 5px;">Como miembro, automatícamente eres asignado como el líder del plan.</small>
-                        ` : `
-                            <select id="lead_id" required>
-                                <option value="">Seleccione un líder...</option>
-                                ${Object.keys(groups).sort().map(area => `
-                                    <optgroup label="Área: ${area}">
-                                        ${groups[area].map(m => `<option value="${m.uid}">${m.name} (${m.role})</option>`).join('')}
-                                    </optgroup>
-                                `).join('')}
-                            </select>
-                        `}
+                    <div id="reverse-summary" class="reverse-summary-box hidden animate-up">
+                        <h4>Validación Lógica (Resumen al revés)</h4>
+                        <div id="reverse-list" class="reverse-summary-list"></div>
+                    </div>
+                </div>
+
+
+                <div class="form-section">
+                    <h3>Metas y Compromiso</h3>
+                    <div class="input-row">
+                        <div class="input-group" style="flex: 1;">
+                            <label>KPI Meta (Esperado a alcanzar)</label>
+                            <input type="text" id="kpi_expected" required placeholder="Ej: 95% de entregas">
+                        </div>
                     </div>
                     
                     <div class="input-group">
@@ -99,7 +113,7 @@ export class ActionPlanCreateView extends View {
                             <input type="date" id="due_date" required style="flex: 1;">
                             <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0; cursor: pointer; white-space: nowrap;">
                                 <input type="checkbox" id="is_recurrent" style="width: 20px; height: 20px;">
-                                Actividad Recurrente
+                                Recurrente
                             </label>
                         </div>
                     </div>
@@ -107,7 +121,7 @@ export class ActionPlanCreateView extends View {
 
                 <div class="form-actions">
                     <button type="button" class="secondary-btn" onclick="window.history.back()">Cancelar</button>
-                    <button type="submit" class="primary-btn">Crear y Notificar</button>
+                    <button type="submit" class="primary-btn">Crear Plan de Mejora Continua</button>
                 </div>
             </form>
         `;
@@ -120,6 +134,57 @@ export class ActionPlanCreateView extends View {
         const form = document.getElementById('plan-form');
         const dueDateInput = document.getElementById('due_date');
         const recurrentCheckbox = document.getElementById('is_recurrent');
+        const whysContainer = document.getElementById('whys-container');
+        const addWhyBtn = document.getElementById('add-why-btn');
+        const reverseSummary = document.getElementById('reverse-summary');
+        const reverseList = document.getElementById('reverse-list');
+        const problemInput = document.getElementById('problem');
+
+        let whyCount = 0;
+
+        const createWhyField = () => {
+            whyCount++;
+            const div = document.createElement('div');
+            div.className = 'why-item';
+            div.innerHTML = `
+                <div class="why-number">${whyCount}</div>
+                <div class="input-group why-input">
+                    <input type="text" class="why-field" placeholder="¿Por qué ocurre lo anterior?" data-index="${whyCount}">
+                </div>
+            `;
+            whysContainer.appendChild(div);
+
+            const input = div.querySelector('input');
+            input.oninput = () => updateReverseSummary();
+        };
+
+        const updateReverseSummary = () => {
+            const inputs = Array.from(document.querySelectorAll('.why-field'));
+            const problem = problemInput.value.trim();
+            const whys = inputs.map(i => i.value.trim()).filter(v => v !== '');
+
+            if (whys.length > 1) {
+                reverseSummary.classList.remove('hidden');
+                let html = '';
+                // Construir lógica inversa
+                for (let i = whys.length - 1; i > 0; i--) {
+                    html += `<div class="reverse-item">Porque <strong>${whys[i]}</strong>, entonces <strong>${whys[i-1]}</strong>.</div>`;
+                }
+                // Último paso: del porqué 1 al problema original
+                if (whys[0] && problem) {
+                    html += `<div class="reverse-item">Porque <strong>${whys[0]}</strong>, el resultado fue: <strong>${problem}</strong>.</div>`;
+                }
+                reverseList.innerHTML = html;
+            } else {
+                reverseSummary.classList.add('hidden');
+            }
+        };
+
+        // Inicializar con 5 porqués
+        for (let i = 0; i < 5; i++) createWhyField();
+
+        addWhyBtn.onclick = () => createWhyField();
+        problemInput.oninput = () => updateReverseSummary();
 
         if (!form) return;
 
@@ -139,16 +204,22 @@ export class ActionPlanCreateView extends View {
             e.preventDefault();
             const btn = form.querySelector('button[type="submit"]');
             btn.disabled = true;
-            btn.textContent = "Creando...";
+            btn.textContent = "Creando Plan de Mejora Continua...";
 
             const leadId = document.getElementById('lead_id').value;
             const leadArea = this.members.find(m => m.uid === leadId)?.area || 'General';
+            
+            const whys = Array.from(document.querySelectorAll('.why-field'))
+                .map(i => i.value.trim())
+                .filter(v => v !== '');
 
             const planData = {
                 title: document.getElementById('title').value,
                 problem: document.getElementById('problem').value,
+                whys: whys,
+                prevention: '', // Se definirá en una etapa posterior de revisión
                 kpi_nok: document.getElementById('kpi_nok').value,
-                objective: document.getElementById('objective').value,
+                objective: "Mejora Continua 8D's", // Autocompletado por metodología
                 kpi_expected: document.getElementById('kpi_expected').value,
                 coordinator_id: document.getElementById('coordinator_id')?.value || '',
                 lead_id: leadId,
@@ -158,7 +229,8 @@ export class ActionPlanCreateView extends View {
                 creator_name: this.app.currentUser.name,
                 status: 'en_proceso',
                 progress: 0,
-                risk: 'green'
+                risk: 'green',
+                methodology: '8D'
             };
 
             try {

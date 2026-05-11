@@ -54,6 +54,7 @@ export class ActionPlanDetailView extends View {
                 <div class="plan-grid">
                     <div class="plan-main-info glass-effect">
                         <section>
+                            <div class="section-badge">D2</div>
                             <h3>Problemática</h3>
                             <p>${this.escapeHTML(this.plan.problem)}</p>
                             ${this.plan.kpi_nok ? `
@@ -62,9 +63,51 @@ export class ActionPlanDetailView extends View {
                                 </div>
                             ` : ''}
                         </section>
+
+                        ${this.plan.whys && this.plan.whys.length > 0 ? `
+                        <section class="animate-up">
+                            <div class="section-badge">D4</div>
+                            <h3>Análisis Causa Raíz (Los ${this.plan.whys.length} Porqués)</h3>
+                            <div class="whys-container">
+                                ${this.plan.whys.map((w, i) => `
+                                    <div class="why-item">
+                                        <div class="why-number">${i + 1}</div>
+                                        <p class="why-text">${this.escapeHTML(w)}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="reverse-summary-box">
+                                <h4>Validación de Lógica (Resumen al revés)</h4>
+                                <div class="reverse-summary-list">
+                                    ${this.plan.whys.slice().reverse().map((w, i, arr) => {
+                                        const current = w;
+                                        const next = arr[i + 1];
+                                        if (next) {
+                                            return `<div class="reverse-item">Porque <strong>${this.escapeHTML(current)}</strong>, entonces <strong>${this.escapeHTML(next)}</strong>.</div>`;
+                                        } else {
+                                            // Último paso: del porqué 1 al problema
+                                            return `<div class="reverse-item">Porque <strong>${this.escapeHTML(current)}</strong>, el resultado fue: <strong>${this.escapeHTML(this.plan.problem)}</strong>.</div>`;
+                                        }
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </section>
+                        ` : ''}
+
+                        ${this.plan.prevention ? `
+                        <section class="animate-up">
+                            <div class="section-badge">D7</div>
+                            <h3>Prevención de Recurrencia</h3>
+                            <div class="d7-box">
+                                <p>${this.escapeHTML(this.plan.prevention)}</p>
+                            </div>
+                        </section>
+                        ` : ''}
+
                         <section>
-                            <h3>Objetivo Esperado</h3>
-                            <p>${this.escapeHTML(this.plan.objective)}</p>
+                            <h3>Meta Esperada</h3>
+                            <p>${this.plan.objective || 'N/A'}</p>
                             ${this.plan.kpi_expected ? `
                                 <div class="kpi-badge kpi-expected">
                                     <strong>KPI Meta:</strong> ${this.escapeHTML(this.plan.kpi_expected)}
@@ -887,6 +930,26 @@ export class ActionPlanDetailView extends View {
                         </select>
                     </div>
 
+                    <!-- D4: Porqués en Edición -->
+                    <div class="form-section-mini">
+                        <label>D4: Análisis de Causa Raíz (Los Porqués)</label>
+                        <div id="edit-whys-container" class="whys-container">
+                            ${(this.plan.whys || []).map((w, i) => `
+                                <div class="why-item">
+                                    <div class="why-number">${i + 1}</div>
+                                    <input type="text" class="edit-why-field" value="${this.escapeHTML(w)}" placeholder="¿Por qué?">
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button type="button" class="add-why-btn sm" id="edit-add-why">+ Añadir Por qué</button>
+                    </div>
+
+                    <!-- D7: Prevención en Edición -->
+                    <div class="input-group">
+                        <label>D7: Prevención de Recurrencia</label>
+                        <textarea id="edit-prevention" class="custom-textarea">${this.plan.prevention || ''}</textarea>
+                    </div>
+
                     <div class="input-group">
                         <label>Fecha Compromiso</label>
                         <div style="display: flex; align-items: center; gap: 1rem;">
@@ -902,6 +965,20 @@ export class ActionPlanDetailView extends View {
         `;
 
         modal.classList.remove('hidden');
+
+        // Lógica para añadir porqués en el modal de edición
+        const addWhyEditBtn = document.getElementById('edit-add-why');
+        const whysEditContainer = document.getElementById('edit-whys-container');
+        addWhyEditBtn.onclick = () => {
+            const count = whysEditContainer.querySelectorAll('.why-item').length + 1;
+            const div = document.createElement('div');
+            div.className = 'why-item';
+            div.innerHTML = `
+                <div class="why-number">${count}</div>
+                <input type="text" class="edit-why-field" placeholder="¿Por qué?">
+            `;
+            whysEditContainer.appendChild(div);
+        };
 
         // Toggle recurrente
         document.getElementById('edit-is-recurrent').onchange = (e) => {
@@ -921,9 +998,15 @@ export class ActionPlanDetailView extends View {
         btn.disabled = true;
         btn.textContent = "Guardando...";
 
+        const whys = Array.from(document.querySelectorAll('.edit-why-field'))
+            .map(i => i.value.trim())
+            .filter(v => v !== '');
+
         const editedData = {
             title: document.getElementById('edit-title').value,
             problem: document.getElementById('edit-problem').value,
+            whys: whys,
+            prevention: document.getElementById('edit-prevention').value,
             kpi_nok: document.getElementById('edit-kpi-nok').value,
             objective: document.getElementById('edit-objective').value,
             kpi_expected: document.getElementById('edit-kpi-expected').value,

@@ -31,6 +31,17 @@
 </head>
 
 <body>
+    <!-- Pantalla de Carga Inicial -->
+    <div id="app-loading-screen" class="app-loading-screen">
+        <div class="loading-content">
+            <div class="loading-logo">TRABAJO EN <span>EQUIPO</span></div>
+            <p>Preparando tu entorno de trabajo...</p>
+            <div class="loading-bar-container">
+                <div class="loading-bar"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="app">
         <!-- Main Application Container -->
         <header id="main-header" class="glass-effect hidden">
@@ -48,6 +59,20 @@
                     <span class="bell-icon">🔔</span>
                     <span id="notif-badge" class="badge-count hidden">0</span>
                 </button>
+
+                <!-- Dropdown de Notificaciones (Nube) -->
+                <div id="notif-dropdown" class="notif-dropdown glass-effect hidden">
+                    <div class="notif-dropdown-header">
+                        <h3>Notificaciones</h3>
+                        <button id="mark-all-read" class="text-btn">Marcar todas como leídas</button>
+                    </div>
+                    <div id="notif-dropdown-list" class="notif-dropdown-list">
+                        <div class="notif-loading">Cargando...</div>
+                    </div>
+                    <div class="notif-dropdown-footer">
+                        <a href="#notifications" id="view-all-notifs">Ver todo el historial</a>
+                    </div>
+                </div>
                 <button id="logout-btn" class="secondary-btn sm">Salir</button>
                 <button id="menu-toggle" class="hamburger-btn">
                     <span></span>

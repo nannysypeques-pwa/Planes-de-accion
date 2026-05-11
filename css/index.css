@@ -42,6 +42,78 @@
     --primary-glow: rgba(236, 128, 198, 0.3);
 }
 
+/* Pantalla de Carga Inicial (Prioridad Alta) */
+.app-loading-screen {
+    position: fixed;
+    inset: 0;
+    background: #fff5f9;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+}
+
+.app-loading-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loading-content {
+    text-align: center;
+    max-width: 300px;
+    width: 100%;
+}
+
+.loading-logo {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #2d0a1a;
+    margin-bottom: 1rem;
+    animation: loadingPulse 2s infinite ease-in-out;
+}
+
+.loading-logo span {
+    color: #EC80C6;
+}
+
+.loading-content p {
+    color: #8a5a71;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 2.5rem;
+    letter-spacing: 0.5px;
+}
+
+.loading-bar-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(210, 50, 143, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(210, 50, 143, 0.03);
+}
+
+.loading-bar {
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, #EC80C6, #D2328F);
+    border-radius: 10px;
+    animation: loadingSlide 2s infinite ease-in-out;
+}
+
+@keyframes loadingPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.98); opacity: 0.8; }
+}
+
+@keyframes loadingSlide {
+    0% { transform: translateX(-100%); width: 30%; }
+    50% { transform: translateX(0%); width: 60%; }
+    100% { transform: translateX(100%); width: 30%; }
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -583,6 +655,164 @@ button.primary-btn:active {
 .task-body h4 {
     font-size: 1.1rem;
     margin-bottom: 0.2rem;
+}
+
+/* Notification Dropdown (Nube Premium) */
+.controls { position: relative; }
+
+.notif-dropdown {
+    position: absolute;
+    top: 60px;
+    right: -10px;
+    width: 360px;
+    background: #ffffff; /* Totalmente blanco */
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(210, 50, 143, 0.1);
+    box-shadow: 0 20px 50px rgba(210, 50, 143, 0.15);
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    animation: cloudEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: top right;
+}
+
+@keyframes cloudEnter {
+    from { opacity: 0; transform: translateY(15px) scale(0.92); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Triangulito de la nube */
+.notif-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 25px;
+    width: 16px;
+    height: 16px;
+    background: #ffffff; /* Totalmente blanco */
+    transform: rotate(45deg);
+    border-left: 1px solid rgba(210, 50, 143, 0.1);
+    border-top: 1px solid rgba(210, 50, 143, 0.1);
+    z-index: -1;
+}
+
+.notif-dropdown-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(210, 50, 143, 0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notif-dropdown-header h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-main);
+    font-family: 'Outfit';
+}
+
+#mark-all-read {
+    background: rgba(236, 128, 198, 0.1);
+    color: var(--rosa-strong);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+#mark-all-read:hover {
+    background: var(--rosa-med);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.notif-dropdown-list {
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 0.8rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rosa-light) transparent;
+}
+
+.notif-dropdown-list::-webkit-scrollbar { width: 4px; }
+.notif-dropdown-list::-webkit-scrollbar-thumb { background: var(--rosa-light); border-radius: 10px; }
+
+.dropdown-notif-item {
+    display: flex;
+    gap: 1.2rem;
+    padding: 1.2rem;
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    background: transparent;
+}
+
+.dropdown-notif-item:hover {
+    background: white;
+    box-shadow: var(--shadow-soft);
+    transform: scale(1.02);
+}
+
+.dropdown-notif-item.unread {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(236, 128, 198, 0.2);
+}
+
+.dropdown-notif-item.unread::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--rosa-med);
+    border-radius: 50%;
+    margin-top: 5px;
+}
+
+.dropdown-notif-icon {
+    font-size: 1.4rem;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dropdown-notif-body { flex: 1; }
+.dropdown-notif-body h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--text-main); }
+.dropdown-notif-body p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; }
+.dropdown-notif-time { font-size: 0.75rem; color: var(--rosa-med); font-weight: 600; margin-top: 0.5rem; display: block; }
+
+.notif-dropdown-footer {
+    padding: 1.2rem;
+    text-align: center;
+    border-top: 1px solid rgba(210, 50, 143, 0.08);
+}
+
+.notif-dropdown-footer a {
+    color: var(--rosa-strong);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.notif-dropdown-footer a:hover { opacity: 0.7; letter-spacing: 0.5px; }
+
+@media (max-width: 480px) {
+    .notif-dropdown {
+        position: fixed;
+        top: 85px;
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+        max-height: 70vh;
+    }
+    .notif-dropdown::before { display: none; }
 }
 
 .task-body p {
@@ -3585,4 +3815,64 @@ input[type="date"] {
 @keyframes confirm-slide-in {
     from { transform: translateY(30px) scale(0.9); opacity: 0; }
     to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Metodología 8D: 5 Porqués y Prevención */
+.whys-container { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+.why-item { display: flex; align-items: center; gap: 1rem; animation: slideInLeft 0.3s ease-out forwards; }
+.why-number { width: 32px; height: 32px; background: var(--rosa-med); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; flex-shrink: 0; }
+.why-input { flex: 1; }
+.reverse-summary-box { background: #f8fafc; border-left: 4px solid var(--rosa-med); padding: 1.5rem; border-radius: 0 16px 16px 0; margin-top: 2rem; }
+.reverse-summary-box h4 { color: var(--rosa-strong); margin-bottom: 0.8rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+.reverse-summary-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+.reverse-item { font-size: 0.95rem; color: var(--text-main); font-weight: 500; }
+.reverse-item strong { color: var(--rosa-strong); }
+.d7-box { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem; margin-top: 1.5rem; }
+
+/* Estilos para Badges de Disciplinas 8D */
+.section-badge { 
+    display: inline-block; 
+    background: var(--rosa-med); 
+    color: white; 
+    padding: 6px 14px; 
+    border-radius: 10px; 
+    font-size: 0.75rem; 
+    font-weight: 900; 
+    letter-spacing: 1.2px; 
+    text-transform: uppercase; 
+    margin-bottom: 0.8rem; 
+    box-shadow: 0 4px 12px rgba(236, 128, 198, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.add-why-btn { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 0.6rem; 
+    width: 100%; 
+    padding: 14px; 
+    background: rgba(236, 128, 198, 0.04); 
+    border: 2px dashed var(--rosa-med); 
+    border-radius: 18px; 
+    color: var(--rosa-strong); 
+    font-weight: 800; 
+    font-size: 0.95rem; 
+    cursor: pointer; 
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    margin-top: 1.2rem; 
+}
+
+.add-why-btn:hover { 
+    background: var(--rosa-med); 
+    color: white; 
+    border-style: solid; 
+    transform: translateY(-3px) scale(1.01); 
+    box-shadow: 0 12px 24px rgba(236, 128, 198, 0.3); 
+}
+
+.add-why-btn.sm { 
+    padding: 10px; 
+    font-size: 0.85rem; 
+    border-radius: 14px; 
 }
