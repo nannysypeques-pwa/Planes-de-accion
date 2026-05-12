@@ -906,14 +906,31 @@ export class ActionPlanDetailView extends View {
                     await db.collection('tasks').doc(taskId).update(taskPayload);
                     ToastService.success("Tarea actualizada correctamente.");
                 } else {
-                    taskPayload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     await db.collection('tasks').add(taskPayload);
                     ToastService.success("Tarea creada correctamente.");
                     
-                    // Notificar responsable SOLO al crear (opcional)
-                    await FirebaseService.sendNotification(assignedId, "Nueva Tarea", `Se te ha asignado: ${title}`, "#tasks");
+                    // Notificar responsable
+                    const isSubtask = !!parentId;
+                    const notifTitle = isSubtask ? "Nueva SUBTAREA Asignada" : "Nueva Tarea Asignada";
+                    const notifBody = isSubtask 
+                        ? `Se te ha asignado una sub-actividad en el plan "${this.plan.title}": ${title}`
+                        : `Se te ha asignado una tarea en el plan "${this.plan.title}": ${title}`;
+
+                    await FirebaseService.sendNotification(assignedId, notifTitle, notifBody, `#plans/detail/${this.planId}`);
+                    
                     if (helperId) {
-                        await FirebaseService.sendNotification(helperId, "Apoyo en Tarea", `Ayudarás en: ${title}`, "#tasks");
+                        await FirebaseService.sendNotification(helperId, "Apoyo en Tarea", `Ayudarás en la tarea "${title}" del plan ${this.plan.title}`, `#plans/detail/${this.planId}`);
+                    }
+
+                    // Si no es el líder, notificarle que ahora es parte del equipo del proyecto
+                    if (assignedId !== this.plan.lead_id) {
+                        // Opcional: Podríamos verificar si ya le notificamos antes, pero por ahora simplificamos
+                        await FirebaseService.sendNotification(
+                            assignedId, 
+                            "Bienvenido al Equipo", 
+                            `Ahora eres parte del equipo del proyecto: ${this.plan.title}`, 
+                            `#plans/detail/${this.planId}`
+                        );
                     }
                 }
 

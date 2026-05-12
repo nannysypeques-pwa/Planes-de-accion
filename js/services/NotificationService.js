@@ -68,9 +68,11 @@ export class NotificationService {
 
     static async getTokenAndSave(app) {
         try {
+            const registration = await navigator.serviceWorker.ready;
             const messaging = firebase.messaging();
             const token = await messaging.getToken({
-                vapidKey: 'BIlr6BYt8szEj6iNI8y5fjN83ygYYN1GiT9eHis-mZSzoyd6eHoaFqEMxukeFSpIDWZdp1GIVj1vLt8U2_Ths6Q'
+                vapidKey: 'BIlr6BYt8szEj6iNI8y5fjN83ygYYN1GiT9eHis-mZSzoyd6eHoaFqEMxukeFSpIDWZdp1GIVj1vLt8U2_Ths6Q',
+                serviceWorkerRegistration: registration
             });
 
             if (token) {

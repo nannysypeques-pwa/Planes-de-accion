@@ -249,7 +249,24 @@ export class VacacionesView extends View {
                 days_requested: days
             });
 
-            ToastService.success("Solicitud enviada correctamente.");
+            // Notificar a Coordinador de su área y a Gerencia
+            const allMembers = await FirebaseService.getAllMembers();
+            const adminsToNotify = allMembers.filter(m => 
+                (m.role === 'gerente') || 
+                ((m.role === 'coordinador' || m.role === 'coordinadora') && m.area === this.app.currentUser.area)
+            );
+
+            for (const admin of adminsToNotify) {
+                if (admin.uid === this.app.currentUser.uid) continue;
+                await FirebaseService.sendNotification(
+                    admin.uid,
+                    "Nueva Solicitud de Vacaciones",
+                    `${this.app.currentUser.name} ha solicitado ${days} días (${start} al ${end}).`,
+                    "#vacaciones"
+                );
+            }
+
+            ToastService.success("Solicitud enviada correctamente y jefes notificados.");
             document.getElementById('request-vacation-form').reset();
             
             await this.loadStats();
