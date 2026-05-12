@@ -33,31 +33,36 @@ export class NotificationService {
     }
 
     static async showPermissionInvite(app) {
-        // Crear un pequeño banner o modal discreto para invitar a activar notificaciones
-        const invite = document.createElement('div');
-        invite.className = 'notif-invite-banner glass-effect animate-up';
-        invite.innerHTML = `
-            <div class="invite-content">
-                <span class="invite-icon">🔔</span>
-                <div class="invite-text">
-                    <strong>¿Quieres recibir avisos?</strong>
-                    <p>Activa las notificaciones para no perderte cambios en tus tareas.</p>
-                </div>
-                <div class="invite-actions">
-                    <button id="notif-deny" class="text-btn">Ahora no</button>
-                    <button id="notif-allow" class="primary-btn sm">Activar</button>
+        const overlay = document.createElement('div');
+        overlay.className = 'notif-modal-overlay';
+        overlay.innerHTML = `
+            <div class="notif-modal-content">
+                <div class="notif-modal-icon-container">🔔</div>
+                <h2>¿Quieres recibir avisos?</h2>
+                <p>Activa las notificaciones para estar siempre al tanto de tus tareas y planes de acción en tiempo real.</p>
+                <div class="notif-modal-buttons">
+                    <button id="notif-allow" class="notif-modal-btn-primary">¡Sí, activar ahora!</button>
+                    <button id="notif-deny" class="notif-modal-btn-secondary">Quizás más tarde</button>
                 </div>
             </div>
         `;
-        document.body.appendChild(invite);
+        document.body.appendChild(overlay);
 
-        document.getElementById('notif-deny').onclick = () => invite.remove();
+        // Forzar reflow para animación
+        setTimeout(() => overlay.classList.add('active'), 10);
+
+        document.getElementById('notif-deny').onclick = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 400);
+        };
+        
         document.getElementById('notif-allow').onclick = async () => {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 this.getTokenAndSave(app);
             }
-            invite.remove();
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 400);
         };
     }
 
