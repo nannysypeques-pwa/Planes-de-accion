@@ -86,8 +86,9 @@ export class ActionPlanDetailView extends View {
                                         if (next) {
                                             return `<div class="reverse-item">Porque <strong>${this.escapeHTML(current)}</strong>, entonces <strong>${this.escapeHTML(next)}</strong>.</div>`;
                                         } else {
-                                            // Último paso: del porqué 1 al problema
-                                            return `<div class="reverse-item">Porque <strong>${this.escapeHTML(current)}</strong>, el resultado fue: <strong>${this.escapeHTML(this.plan.problem)}</strong>.</div>`;
+                                            // Último paso: del porqué 1 al problema de D4 (o el general)
+                                            const baseProblem = this.plan.problem_d4 || this.plan.problem;
+                                            return `<div class="reverse-item">Porque <strong>${this.escapeHTML(current)}</strong>, el resultado fue: <strong>${this.escapeHTML(baseProblem)}</strong>.</div>`;
                                         }
                                     }).join('')}
                                 </div>
@@ -310,6 +311,12 @@ export class ActionPlanDetailView extends View {
                     this.showTaskForm(editBtn.dataset.id);
                 } else if (delBtn) {
                     this.deleteTask(delBtn.dataset.id);
+                } else if (e.target.closest('.subtask')) {
+                    const parentId = e.target.closest('.subtask').dataset.id;
+                    this.showTaskForm(null, parentId);
+                } else if (e.target.closest('.toggle-subtasks')) {
+                    const parentId = e.target.closest('.toggle-subtasks').dataset.id;
+                    this.toggleSubtasks(parentId);
                 }
             });
         }
@@ -425,7 +432,11 @@ export class ActionPlanDetailView extends View {
 
         const canEditTask = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role) || this.plan.lead_id === this.app.currentUser.uid;
 
-        return tasks.map(t => {
+        // Agrupar tareas: padres y sus hijos
+        const parents = tasks.filter(t => !t.parent_id);
+        const subtasks = tasks.filter(t => t.parent_id);
+
+        const renderSingleRow = (t, isSub = false) => {
             const resp = membersMap[t.assigned_id] || null;
             const help = t.helper_id ? membersMap[t.helper_id] : null;
             const st = statusConfig[t.status] || statusConfig.pendiente;
@@ -442,8 +453,12 @@ export class ActionPlanDetailView extends View {
                 daysHtml = `<span class="days-chip done">✅ Tarea Completada</span>`;
             }
 
+            const hasChildren = subtasks.some(s => s.parent_id === t.id);
+
             return `
-                <div class="task-row-premium ${st.cls} ${timeStatus}" data-id="${t.id}">
+                <div class="task-row-premium ${st.cls} ${timeStatus} ${isSub ? 'is-subtask' : ''} ${isSub ? 'hidden' : ''}" 
+                     data-id="${t.id}" 
+                     ${isSub ? `data-parent="${t.parent_id}"` : ''}>
                     <div class="task-status-bar"></div>
                     <div class="task-row-content">
                         <div class="task-row-top">
@@ -451,12 +466,17 @@ export class ActionPlanDetailView extends View {
                             ${daysHtml}
                             ${canEditTask ? `
                                 <div class="task-actions">
+                                    ${!isSub ? `<button class="task-action-btn subtask" data-id="${t.id}">+ SUBTAREA</button>` : ''}
                                     <button class="task-action-btn edit-task" data-id="${t.id}" title="Editar Tarea">✏️</button>
                                     <button class="task-action-btn delete delete-task" data-id="${t.id}" title="Eliminar Tarea">🗑️</button>
                                 </div>
                             ` : ''}
                         </div>
-                        <h4 class="task-title">${t.title}</h4>
+                        <h4 class="task-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                            ${!isSub && hasChildren ? `<button class="toggle-subtasks" data-id="${t.id}" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.2rem; transition: transform 0.3s;">⌄</button>` : ''}
+                            ${isSub ? '<span class="subtask-indicator">↳</span>' : ''}
+                            ${t.title}
+                        </h4>
                         <div class="task-row-meta">
                             <div class="task-person">
                                 <div class="avatar-sm">${resp ? initials(resp.name) : '?'}</div>
@@ -488,7 +508,25 @@ export class ActionPlanDetailView extends View {
                     </div>
                 </div>
             `;
+        };
+
+        return parents.map(p => {
+            const children = subtasks.filter(s => s.parent_id === p.id);
+            return renderSingleRow(p) + children.map(c => renderSingleRow(c, true)).join('');
         }).join('');
+    }
+
+    toggleSubtasks(parentId) {
+        const children = document.querySelectorAll(`.task-row-premium[data-parent="${parentId}"]`);
+        const btn = document.querySelector(`.toggle-subtasks[data-id="${parentId}"]`);
+        children.forEach(c => {
+            c.classList.toggle('hidden');
+            c.classList.toggle('animate-down');
+        });
+        if (btn) {
+            const isCollapsed = children[0]?.classList.contains('hidden');
+            btn.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+        }
     }
 
     renderTaskChronogram(tasks, membersMap) {
@@ -581,9 +619,18 @@ export class ActionPlanDetailView extends View {
             : '';
 
         // ── Task rows ─────────────────────────────────────────────
-        const rowsHtml = tasks.map(t => {
+        const sortedTasks = [];
+        const parents = tasks.filter(t => !t.parent_id);
+        const subtasks = tasks.filter(t => t.parent_id);
+        parents.forEach(p => {
+            sortedTasks.push(p);
+            subtasks.filter(s => s.parent_id === p.id).forEach(s => sortedTasks.push(s));
+        });
+
+        const rowsHtml = sortedTasks.map(t => {
             const si = dayIdx(t.start_date);
             const di = dayIdx(t.due_date);
+            const isSub = !!t.parent_id;
             const color = statusColor[t.status] || statusColor.pendiente;
             const initials = (membersMap[t.assigned_id]?.name || '?')
                 .split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
@@ -595,9 +642,9 @@ export class ActionPlanDetailView extends View {
                 const barLeft  = si * DAY_W;
                 const barWidth = Math.max(DAY_W, (di - si + 1) * DAY_W);
                 barsHtml += `
-                    <div class="gc-bar" style="left:${barLeft}px; width:${barWidth}px; background:${color};"
+                    <div class="gc-bar ${isSub ? 'subtask' : ''}" style="left:${barLeft}px; width:${barWidth}px; background:${color};"
                          title="${t.title} | ${fmtShort(t.start_date)} → ${fmtShort(t.due_date)}">
-                        <span class="gc-bar-label">${t.title}</span>
+                        <span class="gc-bar-label">${isSub ? '↳ ' : ''}${t.title}</span>
                     </div>`;
 
                 // Due-date diamond marker
@@ -622,11 +669,11 @@ export class ActionPlanDetailView extends View {
 
             const respName = membersMap[t.assigned_id]?.name || 'Sin asignar';
             return `
-                <div class="gc-task-row">
+                <div class="gc-task-row ${isSub ? 'is-subtask' : ''}">
                     <div class="gc-name-cell">
                         <div class="avatar-sm">${initials}</div>
                         <div class="gc-name-info">
-                            <span class="gc-task-title" title="${t.title}">${t.title}</span>
+                            <span class="gc-task-title" title="${t.title}">${isSub ? '↳ ' : ''}${t.title}</span>
                             <span class="gc-task-resp">${respName}</span>
                         </div>
                     </div>
@@ -745,11 +792,12 @@ export class ActionPlanDetailView extends View {
         }
     }
 
-    async showTaskForm(taskId = null) {
+    async showTaskForm(taskId = null, parentId = null) {
         const modal = document.getElementById('task-modal');
         const members = await FirebaseService.getAllMembers();
         const planMembers = members.filter(m => (this.plan.members_ids || []).includes(m.uid) || m.uid === this.plan.lead_id);
         const taskToEdit = taskId ? this.tasksData.find(t => t.id === taskId) : null;
+        const currentParentId = taskToEdit ? taskToEdit.parent_id : parentId;
 
         if (!modal) {
             const div = this.createEl('div', 'modal hidden', '');
@@ -761,8 +809,10 @@ export class ActionPlanDetailView extends View {
         taskModal.innerHTML = `
             <div class="modal-content glass-effect" style="max-width: 600px;">
                 <div class="modal-header">
-                    <h3>${taskToEdit ? 'Editar Tarea' : 'Nueva Tarea'}</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-dim);">Completa los detalles de la actividad</p>
+                    <h3>${taskToEdit ? 'Editar Tarea' : (parentId ? 'Nueva Subtarea' : 'Nueva Tarea')}</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-dim);">
+                        ${parentId ? `Desglosando tarea principal` : `Completa los detalles de la actividad`}
+                    </p>
                 </div>
                 
                 <div class="input-group">
@@ -842,6 +892,7 @@ export class ActionPlanDetailView extends View {
             try {
                 const taskPayload = {
                     plan_id: this.planId,
+                    parent_id: currentParentId || null,
                     title: title,
                     assigned_id: assignedId,
                     helper_id: helperId,

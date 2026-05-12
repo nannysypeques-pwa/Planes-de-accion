@@ -282,22 +282,37 @@ export class CronogramaView extends View {
             return headRow + `<div class="gc-row-grid"><div class="gc-sidebar-cell" style="padding-left: 3rem; color: var(--rosa-med); font-size: 0.75rem;">Cargando actividades...</div><div class="gc-track">${this.renderVLines()}</div></div>`;
         }
 
-        const taskRows = tasks.length === 0 
+        // Ordenar tareas por jerarquía
+        const sortedTasks = [];
+        const parents = tasks.filter(t => !t.parent_id);
+        const subtasks = tasks.filter(t => t.parent_id);
+        
+        parents.forEach(p => {
+            sortedTasks.push(p);
+            subtasks.filter(s => s.parent_id === p.id).forEach(s => sortedTasks.push(s));
+        });
+        
+        // Agregar subtareas huérfanas (donde el padre no está asignado a este usuario)
+        subtasks.filter(s => !parents.some(p => p.id === s.parent_id)).forEach(s => sortedTasks.push(s));
+
+        const taskRows = sortedTasks.length === 0 
             ? `<div class="gc-row-grid"><div class="gc-sidebar-cell" style="padding-left: 3rem; font-style: italic; font-size: 0.75rem; color: var(--text-dim);">Sin actividades asignadas</div><div class="gc-track">${this.renderVLines()}</div></div>`
-            : tasks.map(t => {
+            : sortedTasks.map(t => {
                 const statusColor = { pendiente: '#f59e0b', en_proceso: '#3b82f6', completado: '#10b981' };
                 const dotColor = statusColor[t.status] || '#ccc';
+                const isSub = !!t.parent_id;
                 
                 return `
-                    <div class="gc-row-grid">
+                    <div class="gc-row-grid ${isSub ? 'is-subtask' : ''}">
                         <div class="gc-sidebar-cell">
-                            <div class="task-cell-info">
+                            <div class="task-cell-info" style="${isSub ? 'padding-left: 1.5rem;' : ''}">
                                 <div class="st-dot" style="background: ${dotColor}"></div>
-                                <span title="${t.title}">${t.title}</span>
+                                <span title="${t.title}">${isSub ? '↳ ' : ''}${t.title}</span>
                             </div>
                         </div>
                         <div class="gc-track">
                             ${this.renderVLines()}
+    ${this.renderVLines()}
                             ${this.renderBars([t])}
                         </div>
                     </div>

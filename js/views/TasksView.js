@@ -199,53 +199,64 @@ export class TasksView extends View {
                     </div>
                     
                     <div id="project-${group.planId}" class="project-tasks-list">
-                        ${group.tasks.map((t, i) => {
-                            const dueDate = new Date(t.due_date + 'T00:00:00');
-                            const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
+                        ${(() => {
+                            const parents = group.tasks.filter(t => !t.parent_id);
+                            const subtasks = group.tasks.filter(t => t.parent_id);
                             
-                            let dateClass = 'on-time';
-                            if (diffDays <= 0) dateClass = 'critical';
-                            else if (diffDays <= 2) dateClass = 'warning';
+                            const renderTask = (t, isSub = false) => {
+                                const dueDate = new Date(t.due_date + 'T00:00:00');
+                                const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
+                                
+                                let dateClass = 'on-time';
+                                if (diffDays <= 0) dateClass = 'critical';
+                                else if (diffDays <= 2) dateClass = 'warning';
 
-                            let indicator = 'indicator-yellow';
-                            if (t.status === 'en_proceso') indicator = 'indicator-blue';
-                            else if (t.status === 'completado') indicator = 'indicator-green';
-                            else if (t.status === 'cancelada') indicator = 'indicator-cancelada';
-                            
-                            // Si está retrasada (vencida y no completada), forzar rojo
-                            if (diffDays < 0 && !['completado', 'cancelada'].includes(t.status)) indicator = 'indicator-red';
+                                let indicator = 'indicator-yellow';
+                                if (t.status === 'en_proceso') indicator = 'indicator-blue';
+                                else if (t.status === 'completado') indicator = 'indicator-green';
+                                else if (t.status === 'cancelada') indicator = 'indicator-cancelada';
+                                if (diffDays < 0 && !['completado', 'cancelada'].includes(t.status)) indicator = 'indicator-red';
 
-                            const lastNote = t.lastNote ? `
-                                <div class="task-last-note">
-                                    <strong>💬 ${t.lastNoteBy || 'Nota'}:</strong> ${t.lastNote}
-                                </div>
-                            ` : '';
+                                const lastNote = t.lastNote ? `<div class="task-last-note"><strong>💬 ${t.lastNoteBy || 'Nota'}:</strong> ${t.lastNote}</div>` : '';
+                                const hasChildren = !isSub && subtasks.some(s => s.parent_id === t.id);
 
-                            return `
-                            <div class="task-card-mini" style="animation-delay: ${groupIdx * 0.1 + (i * 0.05)}s;">
-                                <div class="task-indicator ${indicator}"></div>
-                                <div style="flex: 1; min-width: 0;">
-                                    <h4 class="task-title-mini">${t.title}</h4>
-                                    ${lastNote}
-                                    <div class="task-mini-meta">
-                                        <div class="task-date-badge sm ${dateClass}">
-                                            <span class="date-icon">${diffDays <= 0 ? '⚠️' : '📅'}</span>
-                                            <span class="date-text" style="font-size: 0.75rem;">${t.due_date}</span>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="font-size: 0.65rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Estado:</span>
-                                            <select class="status-selector-sm" data-id="${t.id}" data-title="${t.title}" style="font-size: 0.65rem; padding: 0.3rem 1.5rem 0.3rem 0.6rem;">
-                                                <option value="pendiente" ${t.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
-                                                <option value="en_proceso" ${t.status === 'en_proceso' ? 'selected' : ''}>⚡ En Proceso</option>
-                                                <option value="completado" ${t.status === 'completado' ? 'selected' : ''}>✅ Completada</option>
-                                                <option value="cancelada" ${t.status === 'cancelada' ? 'selected' : ''}>🚫 Cancelada</option>
-                                            </select>
+                                return `
+                                <div class="task-card-mini ${isSub ? 'is-subtask' : ''} ${isSub ? 'hidden' : ''}" 
+                                     data-parent="${isSub ? t.parent_id : ''}"
+                                     style="animation-delay: ${groupIdx * 0.1 + (group.tasks.indexOf(t) * 0.05)}s;">
+                                    <div class="task-indicator ${indicator}"></div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <h4 class="task-title-mini" style="display: flex; align-items: center; gap: 0.4rem;">
+                                            ${hasChildren ? `<span class="toggle-sub-mini" data-id="${t.id}" style="cursor: pointer; transition: transform 0.3s; display: inline-block;">⌄</span>` : ''}
+                                            ${isSub ? '<span class="subtask-indicator">↳</span>' : ''}
+                                            ${t.title}
+                                        </h4>
+                                        ${lastNote}
+                                        <div class="task-mini-meta">
+                                            <div class="task-date-badge sm ${dateClass}">
+                                                <span class="date-icon">${diffDays <= 0 ? '⚠️' : '📅'}</span>
+                                                <span class="date-text" style="font-size: 0.75rem;">${t.due_date}</span>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <span style="font-size: 0.65rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Estado:</span>
+                                                <select class="status-selector-sm" data-id="${t.id}" data-title="${t.title}" style="font-size: 0.65rem; padding: 0.3rem 1.5rem 0.3rem 0.6rem;">
+                                                    <option value="pendiente" ${t.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
+                                                    <option value="en_proceso" ${t.status === 'en_proceso' ? 'selected' : ''}>⚡ En Proceso</option>
+                                                    <option value="completado" ${t.status === 'completado' ? 'selected' : ''}>✅ Completada</option>
+                                                    <option value="cancelada" ${t.status === 'cancelada' ? 'selected' : ''}>🚫 Cancelada</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            `;
-                        }).join('')}
+                                `;
+                            };
+
+                            return parents.map(p => {
+                                const children = subtasks.filter(s => s.parent_id === p.id);
+                                return renderTask(p) + children.map(c => renderTask(c, true)).join('');
+                            }).join('') + subtasks.filter(s => !parents.some(p => p.id === s.parent_id)).map(s => renderTask(s, true)).join('');
+                        })()}
                     </div>
                 </div>
                 `;
@@ -287,6 +298,18 @@ export class TasksView extends View {
                     const target = document.getElementById(targetId);
                     const container = header.closest('.project-group-container');
                     container.classList.toggle('collapsed');
+                };
+            });
+ 
+            // Listeners toggle subtasks
+            container.querySelectorAll('.toggle-sub-mini').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const parentId = btn.dataset.id;
+                    const children = container.querySelectorAll(`.task-card-mini[data-parent="${parentId}"]`);
+                    children.forEach(c => c.classList.toggle('hidden'));
+                    const isCollapsed = children[0]?.classList.contains('hidden');
+                    btn.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
                 };
             });
 

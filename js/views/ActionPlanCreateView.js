@@ -38,7 +38,7 @@ export class ActionPlanCreateView extends View {
                     <h3>Equipo y Definición del Problema</h3>
                     <div class="input-group">
                         <label>Título del Plan (Estratégico)</label>
-                        <input type="text" id="title" required placeholder="Ej: Optimización de tiempos en entrega">
+                        <input type="text" id="title" required placeholder="Ej: KPI Clientes nuevos">
                     </div>
                     <div class="input-group">
                         <label>Descripción de la Problemática (¿Qué está pasando?)</label>
@@ -47,7 +47,7 @@ export class ActionPlanCreateView extends View {
 
                     <div class="input-group">
                         <label>KPI NOK (Estado actual del indicador)</label>
-                        <input type="text" id="kpi_nok" required placeholder="Ej: 65% de entregas a tiempo">
+                        <input type="text" id="kpi_nok" required placeholder="Ej: 2 clientes nuevos promedio por mes">
                     </div>
 
                     <div class="input-row">
@@ -85,7 +85,11 @@ export class ActionPlanCreateView extends View {
                     <div class="section-badge">D4</div>
                     <h3>Análisis de Causa Raíz (Los 5 Porqués)</h3>
                     <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Profundiza en la causa raíz preguntando "¿Por qué?" sucesivamente.</p>
-                    
+                    <div class="input-group" style="margin-bottom: 2rem; border-bottom: 1px solid #eee; padding-bottom: 1.5rem;">
+                        <label style="color: var(--rosa-strong); font-weight: 800;">Problema a analizar:</label>
+                        <input type="text" id="problem_d4" required placeholder="Ej: No se cumplió el total de clientes nuevos en Puebla" style="font-size: 1.1rem; border-color: var(--rosa-light);">
+                    </div>
+
                     <div id="whys-container" class="whys-container">
                         <!-- Se cargan dinámicamente -->
                     </div>
@@ -103,7 +107,7 @@ export class ActionPlanCreateView extends View {
                     <div class="input-row">
                         <div class="input-group" style="flex: 1;">
                             <label>KPI Meta (Esperado a alcanzar)</label>
-                            <input type="text" id="kpi_expected" required placeholder="Ej: 95% de entregas">
+                            <input type="text" id="kpi_expected" required placeholder="Ej: 3 clientes nuevos promedio por mes">
                         </div>
                     </div>
                     
@@ -138,7 +142,7 @@ export class ActionPlanCreateView extends View {
         const addWhyBtn = document.getElementById('add-why-btn');
         const reverseSummary = document.getElementById('reverse-summary');
         const reverseList = document.getElementById('reverse-list');
-        const problemInput = document.getElementById('problem');
+        const problemD4Input = document.getElementById('problem_d4');
 
         let whyCount = 0;
 
@@ -149,28 +153,41 @@ export class ActionPlanCreateView extends View {
             div.innerHTML = `
                 <div class="why-number">${whyCount}</div>
                 <div class="input-group why-input">
-                    <input type="text" class="why-field" placeholder="¿Por qué ocurre lo anterior?" data-index="${whyCount}">
+                    <label class="why-label" style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 5px;">¿Por qué...?</label>
+                    <input type="text" class="why-field" placeholder="Escribe la respuesta..." data-index="${whyCount}">
                 </div>
             `;
             whysContainer.appendChild(div);
 
             const input = div.querySelector('input');
-            input.oninput = () => updateReverseSummary();
+            input.oninput = () => {
+                updateLabels();
+                updateReverseSummary();
+            };
+        };
+
+        const updateLabels = () => {
+            const inputs = Array.from(document.querySelectorAll('.why-field'));
+            const labels = Array.from(document.querySelectorAll('.why-label'));
+            const problem = problemD4Input.value.trim() || '...';
+
+            labels.forEach((label, i) => {
+                const prevValue = i === 0 ? problem : (inputs[i - 1].value.trim() || '...');
+                label.innerHTML = `¿Por qué <strong>${prevValue}</strong>?`;
+            });
         };
 
         const updateReverseSummary = () => {
             const inputs = Array.from(document.querySelectorAll('.why-field'));
-            const problem = problemInput.value.trim();
+            const problem = problemD4Input.value.trim();
             const whys = inputs.map(i => i.value.trim()).filter(v => v !== '');
 
             if (whys.length > 1) {
                 reverseSummary.classList.remove('hidden');
                 let html = '';
-                // Construir lógica inversa
                 for (let i = whys.length - 1; i > 0; i--) {
-                    html += `<div class="reverse-item">Porque <strong>${whys[i]}</strong>, entonces <strong>${whys[i-1]}</strong>.</div>`;
+                    html += `<div class="reverse-item">Porque <strong>${whys[i]}</strong>, entonces <strong>${whys[i - 1]}</strong>.</div>`;
                 }
-                // Último paso: del porqué 1 al problema original
                 if (whys[0] && problem) {
                     html += `<div class="reverse-item">Porque <strong>${whys[0]}</strong>, el resultado fue: <strong>${problem}</strong>.</div>`;
                 }
@@ -183,8 +200,15 @@ export class ActionPlanCreateView extends View {
         // Inicializar con 5 porqués
         for (let i = 0; i < 5; i++) createWhyField();
 
-        addWhyBtn.onclick = () => createWhyField();
-        problemInput.oninput = () => updateReverseSummary();
+        addWhyBtn.onclick = () => {
+            createWhyField();
+            updateLabels();
+        };
+
+        problemD4Input.oninput = () => {
+            updateLabels();
+            updateReverseSummary();
+        };
 
         if (!form) return;
 
@@ -208,7 +232,7 @@ export class ActionPlanCreateView extends View {
 
             const leadId = document.getElementById('lead_id').value;
             const leadArea = this.members.find(m => m.uid === leadId)?.area || 'General';
-            
+
             const whys = Array.from(document.querySelectorAll('.why-field'))
                 .map(i => i.value.trim())
                 .filter(v => v !== '');
@@ -216,6 +240,7 @@ export class ActionPlanCreateView extends View {
             const planData = {
                 title: document.getElementById('title').value,
                 problem: document.getElementById('problem').value,
+                problem_d4: problemD4Input.value,
                 whys: whys,
                 prevention: '', // Se definirá en una etapa posterior de revisión
                 kpi_nok: document.getElementById('kpi_nok').value,

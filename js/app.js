@@ -13,6 +13,7 @@ import { MembersView } from './views/MembersView.js';
 import { TasksView } from './views/TasksView.js';
 import { CronogramaView } from './views/CronogramaView.js';
 import { VacacionesView } from './views/VacacionesView.js';
+import { NotificationService } from './services/NotificationService.js';
 
 class App {
     constructor() {
@@ -258,7 +259,10 @@ class App {
                     this.setupNotificationsListener();
                     this.checkTaskDeadlines();
                     
-                    // Solo navegar si estamos en login o en blanco
+                    // Inicializar Push Notifications
+                    NotificationService.init(this);
+                    
+                    // Si estamos en login, ir a dashboard
                     const hash = window.location.hash.replace('#', '');
                     if (!hash || hash === 'login') {
                         this.navigateTo(profile.role === 'miembro' ? 'plans' : 'dashboard');

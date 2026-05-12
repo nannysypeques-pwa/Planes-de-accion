@@ -3876,3 +3876,79 @@ input[type="date"] {
     font-size: 0.85rem; 
     border-radius: 14px; 
 }
+
+/* Estilos para Subtareas */
+.task-row-premium.is-subtask { 
+    margin-left: 3.5rem; 
+    border-left: 4px solid var(--rosa-light); 
+    background: rgba(255, 255, 255, 0.4); 
+    scale: 0.96; 
+    margin-top: -0.8rem; 
+    border-radius: 0 24px 24px 0; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.subtask-indicator { 
+    color: var(--rosa-med); 
+    font-weight: 900; 
+    margin-right: 0.6rem; 
+    font-size: 1.1rem;
+}
+
+.task-action-btn.subtask { 
+    background: linear-gradient(135deg, var(--rosa-med), var(--rosa-strong)); 
+    color: white; 
+    border-radius: 20px; 
+    font-size: 0.72rem; 
+    padding: 6px 16px; 
+    width: auto; 
+    height: auto; 
+    text-transform: uppercase; 
+    font-weight: 900; 
+    border: none;
+    box-shadow: 0 4px 12px rgba(236, 128, 198, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    letter-spacing: 0.8px;
+}
+
+.task-action-btn.subtask:hover { 
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 18px rgba(236, 128, 198, 0.4);
+    filter: brightness(1.1);
+}
+
+.gc-task-row.is-subtask .gc-name-cell { padding-left: 2.5rem; }
+.gc-task-row.is-subtask .gc-task-title::before { content: '↳ '; color: var(--rosa-med); font-weight: bold; }
+.gc-bar.subtask { height: 12px; margin-top: 4px; border-radius: 6px; }
+
+/* Conectores en Cronograma */
+.gc-task-row.is-subtask, .gc-row-grid.is-subtask {
+    position: relative;
+}
+
+.gc-task-row.is-subtask .gc-name-cell::before, .gc-row-grid.is-subtask .gc-sidebar-cell::before {
+    content: '';
+    position: absolute;
+    left: 1.2rem;
+    top: -50%;
+    height: 100%;
+    width: 2px;
+    background: var(--rosa-light);
+}
+
+.gc-task-row.is-subtask .gc-name-cell::after, .gc-row-grid.is-subtask .gc-sidebar-cell::after {
+    content: '';
+    position: absolute;
+    left: 1.2rem;
+    top: 50%;
+    width: 0.8rem;
+    height: 2px;
+    background: var(--rosa-light);
+}
+
+/* Ocultar excedente del primer conector si es necesario */
+.gc-task-row.is-subtask:first-child .gc-name-cell::before, .gc-row-grid.is-subtask:first-child .gc-sidebar-cell::before {
+    height: 50%;
+    top: 50%;
+}
