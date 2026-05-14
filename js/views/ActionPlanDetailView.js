@@ -8,6 +8,7 @@ export class ActionPlanDetailView extends View {
         this.planId = planId;
         this.plan = null;
         this.taskView = 'list'; // 'list' o 'chronogram'
+        this.currentFilter = 'all';
     }
 
     async render() {
@@ -22,14 +23,12 @@ export class ActionPlanDetailView extends View {
             const isLead = this.app.currentUser.uid === this.plan.lead_id;
             const isManager = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role);
             const isMember = this.plan.members_ids?.includes(this.app.currentUser.uid);
+            const canEditTask = isManager || isLead;
             
             // Regla: Gerente edita todo, coordinador/miembro solo lo que crearon
             const canEdit = this.app.currentUser.role === 'gerente' || 
                            (['coordinador', 'coordinadora', 'miembro'].includes(this.app.currentUser.role) && 
                             this.plan.creator_id === this.app.currentUser.uid);
-
-            const canEditTask = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role) || this.plan.lead_id === this.app.currentUser.uid;
-
             // Cargar tareas para validar paso 10
             const taskSnap = await db.collection('tasks').where('plan_id', '==', this.planId).get();
             const tasksData = taskSnap.docs.map(doc => doc.data());
@@ -172,7 +171,6 @@ export class ActionPlanDetailView extends View {
                         `}
                     </div>
                 </div>
-
                 <div class="tasks-section" id="plan-tasks">
                     <div class="section-header">
                         <h2>Tareas</h2>
@@ -184,6 +182,15 @@ export class ActionPlanDetailView extends View {
                             ${canEditTask ? '<button class="action-btn sm" id="add-task-btn">+ Nueva Tarea</button>' : ''}
                         </div>
                     </div>
+
+                    <div class="task-filters animate-up" id="task-filter-bar">
+                        <button class="filter-chip ${this.currentFilter === 'all' ? 'active' : ''}" data-filter="all">Todas <span class="count-badge" id="count-all">0</span></button>
+                        <button class="filter-chip ${this.currentFilter === 'pendiente' ? 'active' : ''}" data-filter="pendiente"><span>⏳</span> Pendientes <span class="count-badge" id="count-pendiente">0</span></button>
+                        <button class="filter-chip ${this.currentFilter === 'en_proceso' ? 'active' : ''}" data-filter="en_proceso"><span>⚡</span> En Proceso <span class="count-badge" id="count-en_proceso">0</span></button>
+                        <button class="filter-chip ${this.currentFilter === 'completado' ? 'active' : ''}" data-filter="completado"><span>✓</span> Completadas <span class="count-badge" id="count-completado">0</span></button>
+                        <button class="filter-chip ${this.currentFilter === 'cancelada' ? 'active' : ''}" data-filter="cancelada"><span>✕</span> Canceladas <span class="count-badge" id="count-cancelada">0</span></button>
+                    </div>
+
                     <div id="tasks-container" class="tasks-list-container">
                         <!-- Tareas cargadas dinámicamente -->
                         <div class="loading-inline">Cargando tareas...</div>
@@ -247,7 +254,6 @@ export class ActionPlanDetailView extends View {
         if (!this.plan) return;
 
         // Cargar Tareas
-        this.loadTasks();
 
         // Cargar Nombres de Miembros
         if (this.plan.members_ids?.length > 0) {
@@ -298,6 +304,20 @@ export class ActionPlanDetailView extends View {
         const editPlanBtn = document.getElementById('edit-plan-btn');
         if (editPlanBtn) {
             editPlanBtn.onclick = () => this.showEditPlanModal();
+        }
+
+        // Eventos de Filtros
+        const filterBar = document.getElementById('task-filter-bar');
+        if (filterBar) {
+            filterBar.onclick = (e) => {
+                const chip = e.target.closest('.filter-chip');
+                if (chip) {
+                    this.currentFilter = chip.dataset.filter;
+                    filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    this.loadTasks();
+                }
+            };
         }
 
         // Delegación de eventos para botones de tareas (Editar/Eliminar)
@@ -386,7 +406,29 @@ export class ActionPlanDetailView extends View {
         const container = document.getElementById('tasks-container');
         try {
             const snapshot = await db.collection('tasks').where('plan_id', '==', this.planId).get();
-            const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Calcular conteos para los filtros
+            const counts = {
+                all: allTasks.length,
+                pendiente: allTasks.filter(t => t.status === 'pendiente').length,
+                en_proceso: allTasks.filter(t => t.status === 'en_proceso').length,
+                completado: allTasks.filter(t => t.status === 'completado').length,
+                cancelada: allTasks.filter(t => t.status === 'cancelada').length
+            };
+
+            // Actualizar badges de la UI
+            Object.keys(counts).forEach(key => {
+                const badge = document.getElementById(`count-${key}`);
+                if (badge) badge.textContent = counts[key];
+            });
+
+            // Aplicar Filtro para la vista actual
+            let tasks = allTasks;
+            if (this.currentFilter !== 'all') {
+                tasks = allTasks.filter(t => t.status === this.currentFilter);
+            }
+
             this.tasksData = tasks; // Store for edit access
 
             if (tasks.length === 0) {
@@ -414,6 +456,7 @@ export class ActionPlanDetailView extends View {
             pendiente:   { label: 'Pendiente',  icon: '⏳', cls: 'st-pending' },
             en_proceso:  { label: 'En Proceso', icon: '⚡', cls: 'st-progress' },
             completado:  { label: 'Completado', icon: '✓',  cls: 'st-done' },
+            cancelada:   { label: 'Cancelada',  icon: '✕',  cls: 'st-overdue' },
         };
 
         const fmtDate = iso => {
@@ -427,12 +470,11 @@ export class ActionPlanDetailView extends View {
             const diff = Math.round((new Date(iso + 'T12:00:00') - new Date()) / 86400000);
             return diff;
         };
-
         const initials = name => (name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const isLead = this.app.currentUser.uid === this.plan.lead_id;
+        const isManager = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role);
+        const canEditTask = isManager || isLead;
 
-        const canEditTask = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role) || this.plan.lead_id === this.app.currentUser.uid;
-
-        // Agrupar tareas: padres y sus hijos
         const parents = tasks.filter(t => !t.parent_id);
         const subtasks = tasks.filter(t => t.parent_id);
 

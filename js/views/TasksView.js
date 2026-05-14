@@ -462,7 +462,7 @@ export class TasksView extends View {
                                   text-decoration: ${isDone ? 'line-through' : 'none'};
                                   opacity: ${isDone ? 0.5 : 1};
                                   color: ${isOverdue ? '#b91c1c' : 'var(--text-main)'};
-                                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                  white-space: normal; line-height: 1.4;">
                             ${t.title}
                         </p>
                         ${dateLabel ? `

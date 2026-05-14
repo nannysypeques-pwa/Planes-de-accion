@@ -2898,6 +2898,8 @@ input[type="date"] {
     font-weight: 700;
     color: var(--text-main);
     margin-bottom: 0.4rem;
+    white-space: normal;
+    line-height: 1.4;
 }
 
 .task-mini-meta {
@@ -4059,4 +4061,60 @@ input[type="date"] {
 .notif-modal-btn-secondary:hover {
     background: #ebedf2;
     color: #444;
+}
+
+/* Tarea Filters Styles */
+.task-filters {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    padding: 0.5rem 0.2rem;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.task-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-chip {
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-soft);
+}
+
+.filter-chip:hover {
+    transform: translateY(-2px);
+    border-color: var(--rosa-med);
+    color: var(--rosa-strong);
+}
+
+.filter-chip.active {
+    background: linear-gradient(135deg, var(--rosa-strong), var(--rosa-med));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 8px 20px rgba(231, 38, 116, 0.25);
+}
+
+.filter-chip .count-badge {
+    background: rgba(0,0,0,0.1);
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.filter-chip.active .count-badge {
+    background: rgba(255,255,255,0.2);
 }
