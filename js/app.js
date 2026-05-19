@@ -13,6 +13,7 @@ import { MembersView } from './views/MembersView.js';
 import { TasksView } from './views/TasksView.js';
 import { CronogramaView } from './views/CronogramaView.js';
 import { VacacionesView } from './views/VacacionesView.js';
+import { KeepView } from './views/KeepView.js';
 import { NotificationService } from './services/NotificationService.js';
 
 class App {
@@ -34,6 +35,7 @@ class App {
             'tasks': TasksView,
             'cronograma': CronogramaView,
             'vacaciones': VacacionesView,
+            'keep': KeepView,
             'notifications': NotificationsView,
             'members': MembersView
         };
@@ -228,6 +230,14 @@ class App {
 
     async logout() {
         try {
+            if (this.reminderUnsubscribe) {
+                this.reminderUnsubscribe();
+                this.reminderUnsubscribe = null;
+            }
+            if (this.reminderInterval) {
+                clearInterval(this.reminderInterval);
+                this.reminderInterval = null;
+            }
             await auth.signOut();
             localStorage.removeItem('user_session');
             this.currentUser = null;
@@ -261,6 +271,7 @@ class App {
                     
                     // Inicializar Push Notifications
                     NotificationService.init(this);
+                    NotificationService.startKeepReminderScheduler(this);
                     
                     // Si estamos en login, ir a dashboard
                     const hash = window.location.hash.replace('#', '');
@@ -279,6 +290,14 @@ class App {
                 if (this.notifUnsubscribe) {
                     this.notifUnsubscribe();
                     this.notifUnsubscribe = null;
+                }
+                if (this.reminderUnsubscribe) {
+                    this.reminderUnsubscribe();
+                    this.reminderUnsubscribe = null;
+                }
+                if (this.reminderInterval) {
+                    clearInterval(this.reminderInterval);
+                    this.reminderInterval = null;
                 }
                 this.currentUser = null;
                 localStorage.removeItem('user_session');

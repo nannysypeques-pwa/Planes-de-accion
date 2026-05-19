@@ -8,6 +8,11 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerente';
     }
 
+    // Función para obtener el área del usuario
+    function getUserArea() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.area;
+    }
+
     // 1. USUARIOS: Todos leen perfiles. El dueño o el Gerente pueden editar/borrar.
     match /users/{userId} {
       allow read: if request.auth.uid != null;
@@ -56,6 +61,11 @@ service cloud.firestore {
     match /vacation_requests/{reqId} {
       allow read: if request.auth.uid != null;
       allow write: if request.auth.uid != null;
+    }
+
+    // 7. KEEP NOTES
+    match /keep_notes/{noteId} {
+      allow read, write: if request.auth.uid != null;
     }
   }
 }

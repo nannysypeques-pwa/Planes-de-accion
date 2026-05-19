@@ -91,4 +91,110 @@ export class NotificationService {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
     }
+
+    static startKeepReminderScheduler(app) {
+        if (!app.currentUser) return;
+        
+        const db = firebase.firestore();
+        let activeReminders = [];
+
+        // 1. Listen in real-time to active reminders
+        const unsubscribe = db.collection('keep_notes')
+            .where('reminderFired', '==', false)
+            .onSnapshot(snapshot => {
+                activeReminders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }, error => {
+                console.error("Error in global reminders listener:", error);
+            });
+
+        // 2. Poll every 5 seconds for absolute precision and real-time feel
+        const interval = setInterval(async () => {
+            if (!app.currentUser) {
+                clearInterval(interval);
+                unsubscribe();
+                return;
+            }
+
+            const now = new Date();
+            for (const note of activeReminders) {
+                if (note.reminder) {
+                    // Standardize string replacing space with 'T' for local timezone parsing
+                    const dateStr = note.reminder.replace(' ', 'T');
+                    const reminderDate = new Date(dateStr);
+
+                    if (!isNaN(reminderDate.getTime()) && reminderDate <= now) {
+                        // Prevent duplicate execution local
+                        note.reminderFired = true;
+
+                        // Mark as fired in Firestore
+                        try {
+                            await db.collection('keep_notes').doc(note.id).update({
+                                reminderFired: true
+                            });
+
+                            // Check if current user is a recipient or if no recipients defined (creator fallback)
+                            const recipients = note.reminderRecipients || [];
+                            const isRecipient = recipients.includes(app.currentUser.uid) || recipients.length === 0;
+
+                            if (isRecipient) {
+                                this.fireReminderNotification(note);
+                            }
+
+                            // Send Firestore profile notification to all recipients
+                            const title = `🔔 Ficha Keep: ${note.title || 'Nueva Ficha'}`;
+                            const body = note.content || (note.checklist ? 'Tienes una tarea de Keep pendiente.' : 'Tienes una ficha asignada para revisar hoy.');
+                            
+                            for (const uid of recipients) {
+                                try {
+                                    await db.collection('notifications').add({
+                                        userId: uid,
+                                        title,
+                                        body,
+                                        link: '#keep',
+                                        read: false,
+                                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                                } catch (e) {
+                                    console.error("Error adding background notification:", e);
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error firing background reminder:", e);
+                        }
+                    }
+                }
+            }
+        }, 5000);
+
+        // Store references on app instance
+        app.reminderUnsubscribe = unsubscribe;
+        app.reminderInterval = interval;
+    }
+
+    static fireReminderNotification(note) {
+        const title = `🔔 Recordatorio: ${note.title || 'Nota'}`;
+        const body = note.content || (note.checklist ? 'Tienes elementos pendientes por revisar.' : 'Revisar notas');
+
+        // 1. Toast Alert
+        ToastService.info(body, title);
+
+        // 2. Service Worker push
+        if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, {
+                        body: body,
+                        icon: './logo-sin-fondo.png',
+                        badge: './logo-sin-fondo.png',
+                        vibrate: [200, 100, 200],
+                        tag: `keep_reminder_${note.id}`,
+                        renotify: true,
+                        data: { noteId: note.id }
+                    });
+                });
+            } catch (e) {
+                new Notification(title, { body });
+            }
+        }
+    }
 }

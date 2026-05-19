@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sistema-interno-v2';
+const CACHE_NAME = 'sistema-interno-v4-5';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
 
 // Instalar Service Worker
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Cache abierto exitosamente');
@@ -32,7 +33,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 

@@ -4118,3 +4118,1038 @@ input[type="date"] {
 .filter-chip.active .count-badge {
     background: rgba(255,255,255,0.2);
 }
+
+/* =========================================================
+   MÓDULO KEEP (ESTILO INSPIRACIÓN - PREMIUM CLEAN)
+   ========================================================= */
+
+/* Lienzo completamente blanco y limpio */
+.keep-view-wrapper {
+    background-color: #ffffff;
+    min-height: calc(100vh - 70px);
+    margin: -1.5rem;
+    padding: 2rem;
+    font-family: 'Inter', sans-serif;
+    color: #2d3748;
+}
+
+.keep-view-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Área Filters - Clean Minimal Pills */
+.keep-area-filters {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 2.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: none;
+}
+.keep-area-filters::-webkit-scrollbar { display: none; }
+
+.keep-area-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 30px;
+    border: 1px solid transparent;
+    background: #f7fafc;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #718096;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.keep-area-btn:hover {
+    background: #edf2f7;
+    color: #4a5568;
+}
+
+.keep-area-btn.active {
+    background: #ebf8ff;
+    color: #3182ce;
+    font-weight: 700;
+}
+
+/* Caja de Entrada Rápida (Floating Clean Input) */
+.keep-quick-input-container {
+    max-width: 650px;
+    margin: 0 auto 4rem;
+    position: relative;
+    z-index: 100;
+}
+
+.keep-quick-input {
+    background: #ffffff;
+    border-radius: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.03);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.keep-quick-input:hover {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+}
+
+.keep-quick-input.collapsed .keep-input-title,
+.keep-quick-input.collapsed .keep-quick-actions,
+.keep-quick-input.collapsed #quick-list-container {
+    display: none;
+}
+
+.keep-quick-input.collapsed .keep-input-body {
+    padding: 16px 24px;
+    min-height: 52px;
+    font-weight: 600;
+    color: #4a5568;
+    cursor: text;
+}
+
+.keep-quick-input.collapsed .keep-fake-icons {
+    display: flex;
+    position: absolute;
+    right: 16px;
+    top: 9px;
+    gap: 8px;
+}
+
+.keep-quick-input.expanded {
+    border-radius: 20px;
+    overflow: visible;
+}
+
+.keep-quick-input.expanded .keep-fake-icons {
+    display: none;
+}
+
+.keep-input-title {
+    width: 100%;
+    border: none;
+    padding: 24px 24px 4px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1a202c;
+    outline: none;
+    background: transparent;
+}
+.keep-input-title::placeholder { color: #a0aec0; font-weight: 600; }
+
+.keep-input-body {
+    width: 100%;
+    border: none;
+    padding: 12px 24px 24px;
+    font-size: 0.95rem;
+    color: #4a5568;
+    outline: none;
+    resize: none;
+    min-height: 60px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    background: transparent;
+}
+.keep-input-body::placeholder { color: #a0aec0; font-weight: 500; }
+
+.keep-quick-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 24px 16px;
+}
+
+.keep-toolbar {
+    display: flex;
+    gap: 8px;
+}
+
+.keep-tool-btn {
+    background: transparent;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #718096;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.keep-tool-btn:hover {
+    background: #f7fafc;
+    color: #4a5568;
+    opacity: 1;
+}
+
+.keep-save-btn {
+    background: linear-gradient(135deg, #ff7a91 0%, #ff98a7 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 24px !important;
+    border-radius: 20px !important;
+    font-weight: 700 !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 10px rgba(255, 122, 145, 0.2) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    outline: none !important;
+}
+
+.keep-save-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 14px rgba(255, 122, 145, 0.3) !important;
+    opacity: 0.95 !important;
+}
+
+.keep-close-btn {
+    background: #f8fafc !important;
+    color: #4a5568 !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 8px 24px !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    outline: none !important;
+}
+
+.keep-close-btn:hover {
+    background: #f1f5f9 !important;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+
+/* Paleta de Colores (Soft Pastels Premium) */
+.keep-color-palette {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.03);
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    z-index: 105;
+}
+
+.keep-color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.keep-color-swatch:hover { transform: scale(1.15); border-color: rgba(0,0,0,0.1); }
+.keep-color-swatch.active { border-color: #3182ce; transform: scale(1.1); }
+
+/* Elegantes Tonos Pastel Inspiración */
+.k-color-default { background-color: #ffffff; border: 1px solid rgba(0,0,0,0.12) !important; color: #202124; }
+.k-color-red { background-color: #f28b82; border-color: transparent !important; color: #202124; }
+.k-color-orange { background-color: #fbbc04; border-color: transparent !important; color: #202124; }
+.k-color-yellow { background-color: #fff475; border-color: transparent !important; color: #202124; }
+.k-color-green { background-color: #ccff90; border-color: transparent !important; color: #202124; }
+.k-color-teal { background-color: #a7ffeb; border-color: transparent !important; color: #202124; }
+.k-color-blue { background-color: #cbf0f8; border-color: transparent !important; color: #202124; }
+.k-color-darkblue { background-color: #aecbfa; border-color: transparent !important; color: #202124; }
+.k-color-purple { background-color: #d7aefb; border-color: transparent !important; color: #202124; }
+.k-color-pink { background-color: #fdcfe8; border-color: transparent !important; color: #202124; }
+.k-color-brown { background-color: #e6c9a8; border-color: transparent !important; color: #202124; }
+.k-color-gray { background-color: #e8eaed; border-color: transparent !important; color: #202124; }
+
+/* Masonry Grid */
+.keep-section-title {
+    font-size: 0.65rem;
+    font-family: 'Outfit', sans-serif;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #a0aec0;
+    letter-spacing: 1px;
+    margin: 2rem 0 1rem 0.5rem;
+}
+
+.keep-masonry {
+    column-width: 240px;
+    column-gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Fichas Flotantes (Beautiful Note Card) */
+.keep-note {
+    display: inline-flex; /* Evita anomalías en flujo de columnas */
+    width: 100%;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-radius: 12px; /* Curves matching classic Google Keep notes */
+    padding: 14px;
+    position: relative;
+    border: 1px solid rgba(0,0,0,0.06);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: grab;
+    flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.05); /* Tighter flat shadows */
+    box-sizing: border-box;
+    margin-bottom: 16px; /* Espacio vertical perfecto estilo Tetris */
+}
+
+.keep-note:hover {
+    box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+    transform: translateY(-4px);
+    z-index: 10;
+}
+
+.keep-note.active-palette {
+    z-index: 99999 !important;
+}
+
+/* Elegantes Recordatorios Estilo Google Keep (Pill Tag) */
+.keep-reminder-tag {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 100px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    color: #4a5568;
+    width: fit-content;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    gap: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+    cursor: default;
+    z-index: 5;
+}
+
+.keep-reminder-tag:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.keep-reminder-clear {
+    background: transparent;
+    border: none;
+    color: #718096;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.keep-reminder-clear:hover {
+    background: rgba(0, 0, 0, 0.15);
+    color: #2d3748;
+}
+
+.keep-note:active {
+    cursor: grabbing;
+}
+
+.keep-note.dragging {
+    opacity: 0.35 !important;
+    transform: scale(0.98);
+    border: 2px dashed #4299e1 !important;
+    box-shadow: none !important;
+}
+
+.keep-note-placeholder {
+    display: inline-flex;
+    width: 100%;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    border: 2px dashed #4299e1 !important;
+    background-color: rgba(66, 153, 225, 0.04) !important;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.keep-note-pin {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    font-size: 1.1rem;
+    color: #a0aec0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.keep-note:hover .keep-note-pin, .keep-note-pin.active { opacity: 1; }
+.keep-note-pin:hover { background: rgba(0,0,0,0.04); color: #4a5568; }
+.keep-note-pin.active { color: #e53e3e; }
+
+.keep-note-title {
+    font-size: 1.05rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-right: 28px;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: inherit; /* Hereda el color oscuro de la paleta */
+}
+
+.keep-note-body {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 12px;
+    color: inherit;
+    opacity: 0.9; /* Un poco más claro que el título */
+}
+
+/* Checklists - Clean & Minimal */
+.keep-checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+/* Checkbox Personalizado para visualización y edición - Ultra Estilizado */
+.keep-checklist-item input[type="checkbox"],
+.keep-edit-list-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    max-width: 16px !important;
+    min-height: 16px !important;
+    max-height: 16px !important;
+    margin: 3px 0 0 0 !important; /* Margen superior exacto y ninguno en los lados */
+    padding: 0 !important; /* Elimina herencia de paddings de formulario global */
+    box-sizing: border-box !important;
+    cursor: pointer;
+    border-radius: 4px; /* Bordes altamente redondeados y estilizados */
+    border: 1.5px solid rgba(0, 0, 0, 0.15) !important; /* Borde sutil y fino */
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(255, 255, 255, 0.6) !important; /* Fondo ligeramente translúcido */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.keep-checklist-item input[type="checkbox"]:hover,
+.keep-edit-list-item input[type="checkbox"]:hover {
+    border-color: #3182ce; /* Cambia a azul al hacer hover */
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1); /* Efecto glow sutil */
+    transform: translateY(-0.5px);
+}
+
+.keep-checklist-item input[type="checkbox"]:checked,
+.keep-edit-list-item input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, #4299e1, #3182ce); /* Degradado azul moderno */
+    border-color: transparent;
+    box-shadow: 0 2px 6px rgba(49, 130, 206, 0.2);
+}
+
+/* Dibujar el Checkmark con CSS puro de forma elegante y vectorial */
+.keep-checklist-item input[type="checkbox"]:checked::after,
+.keep-edit-list-item input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 1.8px 1.8px 0;
+    transform: rotate(45deg);
+    top: 2px;
+    left: 5px;
+}
+
+.keep-checklist-item span {
+    flex: 1;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: inherit;
+    opacity: 0.9;
+    word-break: break-word;
+}
+
+.keep-checklist-item.checked span {
+    text-decoration: line-through;
+    opacity: 0.4;
+}
+
+.keep-checklist-divider {
+    height: 1px;
+    background: rgba(0,0,0,0.06);
+    margin: 12px 0;
+}
+
+.keep-checklist-completed-count {
+    font-size: 0.75rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    color: inherit;
+    opacity: 0.5;
+    margin: 8px 0;
+}
+
+/* Interactive Checklist Edit */
+.keep-edit-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.keep-edit-list-item input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    padding: 8px 0;
+    outline: none;
+    color: #1a202c !important; /* Forzar color oscuro para que siempre se vea */
+    font-family: 'Inter', sans-serif;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.keep-edit-list-item input[type="text"]::placeholder {
+    color: #a0aec0 !important; /* Forzar color de placeholder visible */
+    opacity: 1;
+}
+
+.keep-edit-list-item input[type="text"]:focus {
+    border-bottom-color: rgba(49, 130, 206, 0.3);
+}
+
+.keep-edit-list-del {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px 8px;
+    opacity: 0.3;
+    border-radius: 6px;
+}
+
+.keep-edit-list-del:hover { opacity: 0.8; background: rgba(0,0,0,0.05); }
+
+.keep-add-list-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    opacity: 0.6;
+    font-size: 0.85rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 0;
+}
+.keep-add-list-btn:hover { opacity: 1; }
+
+/* Note Toolbar (on hover) */
+.keep-note-toolbar {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    margin-top: auto;
+    padding-top: 12px;
+    position: relative;
+}
+
+.keep-note:hover .keep-note-toolbar { opacity: 1; }
+
+.keep-note-toolbar .keep-tool-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    color: inherit;
+    opacity: 0.4;
+}
+
+.keep-note-toolbar .keep-tool-btn:hover {
+    background: rgba(0,0,0,0.05);
+    opacity: 0.8;
+}
+
+/* Modal Edit */
+.keep-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 32, 44, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.keep-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.keep-modal-content {
+    width: 100%;
+    max-width: 650px;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    position: relative;
+    transform: translateY(30px) scale(0.98);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.keep-modal-overlay.active .keep-modal-content {
+    transform: translateY(0) scale(1);
+}
+
+.keep-modal-body {
+    padding: 32px;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+.keep-modal-body::-webkit-scrollbar { display: none; }
+
+.keep-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px 24px;
+}
+
+/* Badge (Inspired by Image 1 bottom pills) */
+.keep-author-tag {
+    display: inline-block;
+    align-self: flex-start;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.04);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: inherit;
+    opacity: 0.7;
+    margin-top: 16px;
+    text-transform: capitalize;
+}
+
+/* ==========================================================================
+   ILUSTRACIONES Y PERSONALIZACIÓN DE FICHAS (NANNYS Y PEQUES PREMIUM STYLE)
+   ========================================================================== */
+
+/* Color & Pattern Palette Menu */
+.keep-color-palette {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+    width: 285px !important;
+    position: absolute;
+    z-index: 99999 !important; /* Force pop-ups above all cards */
+}
+
+.keep-palette-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.keep-palette-title {
+    font-size: 0.65rem;
+    font-family: 'Outfit', sans-serif;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #a0aec0;
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+}
+
+.keep-palette-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+}
+
+.keep-palette-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    margin: 4px 0;
+}
+
+/* Swatches */
+.keep-color-swatch, .keep-pattern-swatch {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    border: 2px solid rgba(0, 0, 0, 0.06) !important;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.keep-color-swatch:hover, .keep-pattern-swatch:hover {
+    transform: scale(1.18);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    border-color: #4299e1 !important;
+}
+
+/* Swatch Checkmark Indicator when selected */
+.keep-color-swatch.active::after, .keep-pattern-swatch.active::after {
+    content: "✓";
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #ffffff;
+    background: #3182ce;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Swatches representations */
+.k-bg-none {
+    background-color: #f7fafc;
+    color: #a0aec0;
+}
+.k-bg-reading-swatch { background-color: #e3f2fd !important; }
+.k-bg-art-swatch { background-color: #f3e5f5 !important; }
+.k-bg-nature-swatch { background-color: #e8f5e9 !important; }
+.k-bg-music-swatch { background-color: #ffebee !important; }
+.k-bg-food-swatch { background-color: #fffde7 !important; }
+.k-bg-balloons-swatch { background-color: #e0f7fa !important; }
+
+/* 
+   CUSTOM PREMIUM SVG ILLUSTRATIONS / PANORAMIC COVERS (GOOGLE KEEP STYLE)
+   Large themed illustration spreading beautifully across the entire bottom card width!
+*/
+
+.keep-note.k-bg-reading, .keep-modal-content.k-bg-reading, .keep-quick-input.k-bg-reading,
+.keep-note.k-bg-clouds, .keep-modal-content.k-bg-clouds, .keep-quick-input.k-bg-clouds {
+    background-color: #e3f2fd !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' width='100%25' height='100'%3E%3Cpath d='M0 100V70c30-10 60 10 100 0s80-15 120 5c30 15 50-5 80 10v15z' fill='%2363b3ed' opacity='0.4'/%3E%3Cpath d='M0 100V80c40-15 80 5 130-10s90 5 120 15 30-5 50 5v10z' fill='%2390cdf4' opacity='0.7'/%3E%3Cpath d='M250 20a25 25 0 0 0 10 48 25 25 0 1 1-10-48z' fill='%23ecc94b' opacity='0.9'/%3E%3Cpath d='M30 40l15-15 5 15-20 0z' fill='%23ffffff' opacity='0.9'/%3E%3Cpath d='M38 35l15 5-15 2 0-7z' fill='%23cbd5e0' opacity='0.8'/%3E%3Ccircle cx='80' cy='30' r='2' fill='%23ffffff' opacity='0.9'/%3E%3Ccircle cx='120' cy='45' r='1.5' fill='%23ffffff' opacity='0.8'/%3E%3Ccircle cx='180' cy='25' r='2.5' fill='%23ecc94b' opacity='0.9'/%3E%3Ccircle cx='210' cy='50' r='1.5' fill='%23ffffff' opacity='0.9'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: bottom center !important;
+    background-size: 100% auto !important;
+    border-color: rgba(66, 153, 225, 0.25) !important;
+    padding-bottom: 95px !important;
+    color: #202124 !important;
+}
+
+.keep-note.k-bg-art, .keep-modal-content.k-bg-art, .keep-quick-input.k-bg-art,
+.keep-note.k-bg-stars, .keep-modal-content.k-bg-stars, .keep-quick-input.k-bg-stars {
+    background-color: #f3e5f5 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' width='100%25' height='100'%3E%3Cpath d='M50 100a100 100 0 0 1 200 0' fill='none' stroke='%23f687b3' stroke-width='12' opacity='0.4'/%3E%3Cpath d='M70 100a80 80 0 0 1 160 0' fill='none' stroke='%23d7aefb' stroke-width='12' opacity='0.6'/%3E%3Cpath d='M90 100a60 60 0 0 1 120 0' fill='none' stroke='%23fcde9c' stroke-width='12' opacity='0.8'/%3E%3Ccircle cx='40' cy='80' r='12' fill='%23f687b3' opacity='0.6'/%3E%3Ccircle cx='260' cy='75' r='16' fill='%23aecbfa' opacity='0.5'/%3E%3Cpath d='M10 95c10-15 25-5 35-20' fill='none' stroke='%23d7aefb' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M280 90c-10-10-5-25-20-25' fill='none' stroke='%23fcde9c' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: bottom center !important;
+    background-size: 100% auto !important;
+    border-color: rgba(159, 122, 234, 0.25) !important;
+    padding-bottom: 95px !important;
+    color: #202124 !important;
+}
+
+.keep-note.k-bg-nature, .keep-modal-content.k-bg-nature, .keep-quick-input.k-bg-nature,
+.keep-note.k-bg-hearts, .keep-modal-content.k-bg-hearts, .keep-quick-input.k-bg-hearts {
+    background-color: #e8f5e9 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' width='100%25' height='100'%3E%3Ccircle cx='150' cy='50' r='24' fill='%23fbd38d' opacity='0.5'/%3E%3Cpath d='M0 100c40-20 80-20 120 0s80 15 120-10c20-15 40-5 60 10v10z' fill='%23c6f6d5' opacity='0.6'/%3E%3Cpath d='M0 100c50-10 90 10 140-15s70-5 110 15c20 10 35 0 50 10v10z' fill='%2398dbb3' opacity='0.8'/%3E%3Cpath d='M40 85l10-25 10 25z' fill='%2338a169' opacity='0.7'/%3E%3Cpath d='M75 90l8-20 8 20z' fill='%232f855a' opacity='0.7'/%3E%3Cpath d='M220 80l12-30 12 30z' fill='%2338a169' opacity='0.7'/%3E%3Cpath d='M255 90l10-22 10 22z' fill='%232f855a' opacity='0.8'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: bottom center !important;
+    background-size: 100% auto !important;
+    border-color: rgba(72, 187, 120, 0.25) !important;
+    padding-bottom: 95px !important;
+    color: #202124 !important;
+}
+
+.keep-note.k-bg-music, .keep-modal-content.k-bg-music, .keep-quick-input.k-bg-music,
+.keep-note.k-bg-garden, .keep-modal-content.k-bg-garden, .keep-quick-input.k-bg-garden {
+    background-color: #ffebee !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' width='100%25' height='100'%3E%3Cpath d='M0 90c30-20 60 10 100-10s80-20 120 10c30 20 50 0 80-10v20z' fill='%23fbb6ce' opacity='0.5'/%3E%3Cpath d='M0 95c40-10 80-5 130-25s90 15 120-5c20-15 35 5 50 15v20z' fill='%23f687b3' opacity='0.6'/%3E%3Ccircle cx='50' cy='60' r='25' fill='%232d3748' opacity='0.8'/%3E%3Ccircle cx='50' cy='60' r='18' fill='none' stroke='%234a5568' stroke-width='2'/%3E%3Ccircle cx='50' cy='60' r='10' fill='%23f687b3'/%3E%3Ccircle cx='50' cy='60' r='3' fill='%23ffffff'/%3E%3Cpath d='M210 40a4 4 0 1 1-4-4V20l20 3v15a4 4 0 1 1-4-4v-10l-12-2z' fill='%23b83280' opacity='0.8'/%3E%3Cpath d='M260 48a3 3 0 1 1-3-3V32l15 2v10a3 3 0 1 1-3-3v-6l-9-1z' fill='%23b83280' opacity='0.8'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: bottom center !important;
+    background-size: 100% auto !important;
+    border-color: rgba(245, 101, 101, 0.25) !important;
+    padding-bottom: 95px !important;
+    color: #202124 !important;
+}
+
+.keep-note.k-bg-food, .keep-modal-content.k-bg-food, .keep-quick-input.k-bg-food,
+.keep-note.k-bg-toys, .keep-modal-content.k-bg-toys, .keep-quick-input.k-bg-toys {
+    background-color: #fffde7 !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' width='100%25' height='100'%3E%3Crect x='0' y='80' width='300' height='20' fill='%23fbd38d' opacity='0.8'/%3E%3Cline x1='0' y1='80' x2='300' y2='80' stroke='%23dd6b20' stroke-width='1.5'/%3E%3Cpath d='M40 80V55c0-3 3-5 5-5h20c2 0 5 2 5 5v25z' fill='%23fc8181' opacity='0.9'/%3E%3Cpath d='M70 57c5 0 8 3 8 6s-3 6-8 6' fill='none' stroke='%23fc8181' stroke-width='3'/%3E%3Cpath d='M48 45c1-5-1-8 0-12' fill='none' stroke='%23fbd38d' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M58 43c1-5-1-8 0-12' fill='none' stroke='%23fbd38d' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M200 80c0-15 10-25 25-25h30c15 0 25 10 25 25z' fill='%2363b3ed' opacity='0.9'/%3E%3Crect x='195' y='50' width='90' height='5' rx='2.5' fill='%233182ce'/%3E%3Crect x='100' y='68' width='70' height='10' rx='2' fill='%23ed8936' opacity='0.9'/%3E%3Crect x='90' y='71' width='10' height='4' rx='1' fill='%23d69e2e'/%3E%3Crect x='170' y='71' width='10' height='4' rx='1' fill='%23d69e2e'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: bottom center !important;
+    background-size: 100% auto !important;
+    border-color: rgba(236, 201, 75, 0.25) !important;
+    padding-bottom: 95px !important;
+    color: #202124 !important;
+}
+
+.keep-note.k-bg-balloons, .keep-modal-content.k-bg-balloons, .keep-quick-input.k-bg-balloons {
+    background-color: #e0f7fa !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100' width='100%25' height='100'%3E%3Ccircle cx='240' cy='65' r='14' fill='%23f687b3' opacity='0.7'/%3E%3Cpath d='M240 79l-2 3 4 0z' fill='%23d53f8c'/%3E%3Cpath d='M240 82c-3 5 3 10 0 15' fill='none' stroke='%23cbd5e0' stroke-width='1'/%3E%3Ccircle cx='265' cy='55' r='16' fill='%234fd1c5' opacity='0.7'/%3E%3Cpath d='M265 71l-2 3 4 0z' fill='%23319795'/%3E%3Cpath d='M265 74c3 5-3 10 0 15' fill='none' stroke='%23cbd5e0' stroke-width='1'/%3E%3Cpath d='M50 85h60V65H50z' fill='%23e2e8f0' stroke='%23cbd5e0' stroke-width='1.5'/%3E%3Cpath d='M80 35L50 65h60z' fill='%23fc8181'/%3E%3Cpath d='M80 35L65 65h30z' fill='%23ffffff'/%3E%3Cpath d='M80 35L80 65' stroke='%23fc8181' stroke-width='4'/%3E%3Cpath d='M80 35V25l10 5-10 5' fill='%23ecc94b'/%3E%3Cpath d='M0 90h300' stroke='%23cbd5e0' stroke-width='1' stroke-dasharray='4 4'/%3E%3Cpolygon points='10,90 20,100 30,90' fill='%23fc8181' opacity='0.8'/%3E%3Cpolygon points='40,90 50,100 60,90' fill='%234fd1c5' opacity='0.8'/%3E%3Cpolygon points='120,90 130,100 140,90' fill='%23f687b3' opacity='0.8'/%3E%3Cpolygon points='150,90 160,100 170,90' fill='%23ecc94b' opacity='0.8'/%3E%3Cpolygon points='180,90 190,100 200,90' fill='%23fc8181' opacity='0.8'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: bottom center !important;
+    background-size: 100% auto !important;
+    border-color: rgba(79, 209, 197, 0.25) !important;
+    padding-bottom: 95px !important;
+    color: #202124 !important;
+}
+
+/* ==========================================================================
+   DISEÑO PREMIUM PARA EL SELECTOR DE FECHA Y HORA (FLATPICKR OVERRIDES)
+   ========================================================================== */
+.flatpickr-calendar {
+    font-family: 'Outfit', 'Inter', sans-serif !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    padding: 12px 10px !important;
+    background: #ffffff !important;
+    animation: fpFadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes fpFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.flatpickr-months {
+    margin-bottom: 12px !important;
+}
+
+.flatpickr-months .flatpickr-month {
+    color: #1a202c !important;
+    fill: #1a202c !important;
+    font-weight: 800 !important;
+}
+
+.flatpickr-current-month {
+    font-size: 1.05rem !important;
+}
+
+.flatpickr-current-month .numInputWrapper {
+    width: 65px !important;
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    padding: 12px !important;
+    color: #4a5568 !important;
+    fill: #4a5568 !important;
+    border-radius: 50% !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: #1a202c !important;
+    fill: #1a202c !important;
+}
+
+span.flatpickr-weekday {
+    font-weight: 700 !important;
+    color: #a0aec0 !important;
+    font-size: 0.78rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.flatpickr-day {
+    border-radius: 50% !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    color: #2d3748 !important;
+    border: 1px solid transparent !important;
+    margin: 2px auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.flatpickr-day.today {
+    border-color: #ff7a91 !important;
+    color: #ff7a91 !important;
+    background: rgba(255, 122, 145, 0.05) !important;
+    font-weight: 800 !important;
+}
+
+.flatpickr-day.today:hover {
+    background: rgba(255, 122, 145, 0.12) !important;
+    color: #ff7a91 !important;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover {
+    background: #f7fafc !important;
+    color: #1a202c !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected:focus {
+    background: linear-gradient(135deg, #ff7a91 0%, #ff98a7 100%) !important;
+    box-shadow: 0 6px 16px rgba(255, 122, 145, 0.35) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 800 !important;
+    transform: scale(1.05);
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+    color: #cbd5e0 !important;
+   /* Sección de Selección de Hora */
+.flatpickr-time {
+    border-top: 1px solid #edf2f7 !important;
+    padding: 12px 10px 16px 10px !important;
+    margin-top: 10px !important;
+    font-weight: bold !important;
+    color: #2d3748 !important;
+    border-radius: 0 0 16px 16px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-sizing: border-box !important;
+}
+
+.flatpickr-time input {
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 800 !important;
+    color: #1a202c !important;
+    background: #f8fafc !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.95rem !important;
+    padding: 4px 0 !important;
+    width: 60px !important;
+    max-width: 60px !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+}
+
+.flatpickr-time input:focus {
+    background: #ffffff !important;
+    border-color: #ff7a91 !important;
+    box-shadow: 0 0 0 3px rgba(255, 122, 145, 0.15) !important;
+}
+
+.flatpickr-time .flatpickr-time-separator {
+    color: #2d3748 !important;
+    font-weight: 800 !important;
+    font-size: 1.1rem !important;
+}
+
+.flatpickr-time .flatpickr-am-pm {
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 800 !important;
+    color: #4a5568 !important;
+    background: #f8fafc !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 4px 12px !important;
+    height: auto !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    font-size: 0.85rem !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.flatpickr-time .flatpickr-am-pm:hover {
+    background: linear-gradient(135deg, #ff7a91 0%, #ff98a7 100%) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 10px rgba(255, 122, 145, 0.2) !important;
+}
+
+.flatpickr-time .numInputWrapper span.arrowUp:after {
+    border-bottom-color: #718096 !important;
+}
+
+.flatpickr-time .numInputWrapper span.arrowDown:after {
+    border-top-color: #718096 !important;
+}
+
+.flatpickr-time .numInputWrapper span {
+    border: none !important;
+    background: transparent !important;
+}
+

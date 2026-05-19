@@ -24,7 +24,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
-    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/index.css?v=keep25">
 
     <!-- Content Security Policy (Blindaje contra scripts maliciosos) -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.google.com https://cdn.jsdelivr.net https://npmcdn.com https://unpkg.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://npmcdn.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.gstatic.com https://*.googleapis.com https://*.firebasestorage.app; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firebase.google.com https://www.gstatic.com; frame-src 'self' https://www.google.com;">
@@ -52,6 +52,7 @@
                 <a href="#tasks" id="nav-tasks" class="nav-link">Mis tareas</a>
                 <a href="#cronograma" id="nav-cronograma" class="nav-link">Mi Cronograma</a>
                 <a href="#vacaciones" id="nav-vacaciones" class="nav-link">Vacaciones</a>
+                <a href="#keep" id="nav-keep" class="nav-link">Keep</a>
                 <a href="#members" id="nav-members" class="nav-link admin-only hidden">Gestión Equipo</a>
             </nav>
             <div id="user-controls" class="controls">
@@ -101,6 +102,7 @@
                 <a href="#tasks" class="side-link">✅ Mis tareas</a>
                 <a href="#cronograma" class="side-link">📅 Mi Cronograma</a>
                 <a href="#vacaciones" class="side-link">🏖️ Vacaciones</a>
+                <a href="#keep" class="side-link">💡 Keep</a>
                 <a href="#notifications" class="side-link">🔔 Notificaciones</a>
                 <a href="#members" id="side-nav-members" class="side-link admin-only hidden">👥 Gestión Equipo</a>
                 <hr class="menu-divider">
@@ -155,7 +157,7 @@
     </script>
 
     <!-- App Logic -->
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js?v=keep25"></script>
 
     <!-- Register Service Worker for PWA -->
     <script>
