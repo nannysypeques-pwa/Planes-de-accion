@@ -31,6 +31,7 @@ class App {
             'dashboard': DashboardView,
             'plans': ActionPlansView,
             'plans/new': ActionPlanCreateView,
+            'plans/edit': ActionPlanCreateView,
             'plans/detail': ActionPlanDetailView,
             'tasks': TasksView,
             'cronograma': CronogramaView,
@@ -436,7 +437,15 @@ class App {
         }
 
         const ViewClass = this.routes[path] || (this.routes[route] ? this.routes[route] : AuthView);
-        const view = new ViewClass(this, id);
+
+        let view;
+        if (path === 'plans/edit' && id) {
+            view = new ViewClass(this, null, id); // draftId=null, editId=id
+        } else if (path === 'plans/detail' || path === 'plans/new') {
+            view = new ViewClass(this, id);
+        } else {
+            view = new ViewClass(this, id);
+        }
         
         this.container.innerHTML = '<div class="loader-container"><div class="spinner"></div></div>';
         

@@ -54,8 +54,11 @@ export class ActionPlansView extends View {
         try {
             const allPlans = await FirebaseService.getPlansByRole(this.app.currentUser);
             
-            // FILTRO CRÍTICO: Solo donde soy el líder y no estén canceladas
-            let myPlans = allPlans.filter(p => p.lead_id === this.app.currentUser.uid && p.status !== 'cancelada');
+            // FILTRO CRÍTICO: Solo donde soy el líder, no estén canceladas, O sean MIS borradores
+            let myPlans = allPlans.filter(p => 
+                (p.lead_id === this.app.currentUser.uid || (p.status === 'borrador' && p.creator_id === this.app.currentUser.uid)) 
+                && p.status !== 'cancelada'
+            );
             
             if (search) {
                 myPlans = myPlans.filter(p => p.title.toLowerCase().includes(search));
@@ -72,14 +75,14 @@ export class ActionPlansView extends View {
             }
 
             container.innerHTML = myPlans.map((p, i) => `
-                <div class="plan-card-item glass-effect animate-up" data-id="${p.id}" style="animation-delay: ${i * 0.1}s; border-top: 6px solid ${p.risk === 'red' ? '#ef4444' : 'var(--rosa-med)'}; padding: 2rem;">
+                <div class="plan-card-item glass-effect animate-up" data-id="${p.id}" style="animation-delay: ${i * 0.1}s; border-top: 6px solid ${p.status === 'borrador' ? '#94a3b8' : (p.risk === 'red' ? '#ef4444' : 'var(--rosa-med)')}; padding: 2rem;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                        <span class="badge" style="background: var(--rosa-light); color: var(--rosa-strong);">${p.status}</span>
+                        <span class="badge" style="background: ${p.status === 'borrador' ? '#f1f5f9' : 'var(--rosa-light)'}; color: ${p.status === 'borrador' ? '#475569' : 'var(--rosa-strong)'};">${p.status}</span>
                         <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim);">ID: ${p.id.substring(0,6)}</span>
                     </div>
                     
-                    <h3 style="margin-bottom: 1rem; font-size: 1.3rem;">${p.title}</h3>
-                    <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5;">${p.objective.substring(0, 120)}...</p>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.3rem;">${p.title || 'Sin Título (Borrador)'}</h3>
+                    <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.5;">${p.objective ? p.objective.substring(0, 120) + '...' : 'Borrador sin objetivo definido.'}</p>
                     
                     <div style="margin-bottom: 2rem;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600;">
@@ -90,14 +93,21 @@ export class ActionPlansView extends View {
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <button class="primary-btn sm view-detail" data-id="${p.id}">Gestionar Tareas</button>
-                        <button class="secondary-btn sm view-detail" data-id="${p.id}">Ver Equipo</button>
+                        ${p.status === 'borrador' ? `
+                            <button class="primary-btn sm continue-draft" data-id="${p.id}" style="grid-column: 1 / -1; background: var(--text-dim);">Continuar Borrador</button>
+                        ` : `
+                            <button class="primary-btn sm view-detail" data-id="${p.id}">Gestionar Tareas</button>
+                            <button class="secondary-btn sm view-detail" data-id="${p.id}">Ver Equipo</button>
+                        `}
                     </div>
                 </div>
             `).join('');
 
             container.querySelectorAll('.view-detail').forEach(btn => {
                 btn.onclick = () => this.app.navigateTo(`plans/detail/${btn.dataset.id}`);
+            });
+            container.querySelectorAll('.continue-draft').forEach(btn => {
+                btn.onclick = () => this.app.navigateTo(`plans/new/${btn.dataset.id}`);
             });
 
         } catch (error) {

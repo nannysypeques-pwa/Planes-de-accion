@@ -95,6 +95,61 @@ export class ActionPlanDetailView extends View {
                         </section>
                         ` : ''}
 
+                        ${this.plan.root_causes_analysis && this.plan.root_causes_analysis.length > 0 ? `
+                        <section class="animate-up">
+                            <div class="section-badge" style="background: var(--primary);">D4+</div>
+                            <h3>Análisis de Múltiples Causas Raíz</h3>
+                            <div style="display: flex; overflow-x: auto; gap: 1.5rem; padding-bottom: 1rem; width: 100%;">
+                                ${this.plan.root_causes_analysis.map((rc, index) => `
+                                    <div class="glass-effect" style="min-width: 320px; max-width: 350px; flex: 0 0 auto; padding: 1.5rem; border-radius: 8px; border-left: 3px solid var(--rosa-strong);">
+                                        <h4 style="color: var(--rosa-strong); margin-bottom: 0.5rem; font-size: 1rem;">Causa Raíz #${index + 1}</h4>
+                                        <p style="font-weight: 600; margin-bottom: 1rem; font-size: 0.95rem;">${this.escapeHTML(rc.problem)}</p>
+                                        <div class="whys-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                            ${rc.whys.map((w, wIndex) => `
+                                                <div class="why-item" style="margin-bottom: 0; padding: 0.75rem; background: rgba(255,255,255,0.5); border-radius: 6px;">
+                                                    <div class="why-number" style="width: 22px; height: 22px; font-size: 0.8rem; flex-shrink: 0;">${wIndex + 1}</div>
+                                                    <p class="why-text" style="font-size: 0.85rem; margin-left: 0.5rem;">${this.escapeHTML(w)}</p>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </section>
+                        ` : ''}
+
+                        ${this.plan.brainstorming && this.plan.brainstorming.length > 0 ? `
+                        <section class="animate-up">
+                            <div class="section-badge" style="background: var(--secondary);">D5</div>
+                            <h3>Lluvia de Ideas (Brainstorming)</h3>
+                            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                                ${this.plan.brainstorming.map((bs, idx) => `
+                                    <div style="border-left: 3px solid var(--secondary); padding-left: 1rem;">
+                                        <p style="font-size: 0.8rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem;">
+                                            Causa Raíz #${idx + 1}: ${this.escapeHTML(bs.cause_label || '')}
+                                        </p>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                            ${bs.ideas.map(idea => `
+                                                <span style="
+                                                    display: inline-flex; align-items: center; gap: 0.4rem;
+                                                    padding: 0.35rem 0.85rem;
+                                                    border-radius: 20px;
+                                                    font-size: 0.82rem;
+                                                    font-weight: ${idea.viable ? '700' : '500'};
+                                                    background: ${idea.viable ? 'rgba(5,174,230,0.12)' : 'rgba(0,0,0,0.05)'};
+                                                    border: 1.5px solid ${idea.viable ? 'var(--secondary)' : '#e2e8f0'};
+                                                    color: ${idea.viable ? 'var(--azul-deep)' : 'var(--text-dim)'};
+                                                ">
+                                                    ${idea.viable ? '⭐' : '○'} ${this.escapeHTML(idea.text)}
+                                                </span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </section>
+                        ` : ''}
+
                         ${this.plan.prevention ? `
                         <section class="animate-up">
                             <div class="section-badge">D7</div>
@@ -115,8 +170,22 @@ export class ActionPlanDetailView extends View {
                             ` : ''}
                         </section>
                         <section>
-                            <h3>Recursos</h3>
-                            <p>${this.plan.resources ? this.escapeHTML(this.plan.resources) : 'No especificados'}</p>
+                            <h3>Fecha de Inicio</h3>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <span style="font-size: 1.8rem;">📅</span>
+                                <div>
+                                    <p style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0;">
+                                        ${this.plan.createdAt
+                                            ? (() => {
+                                                const d = this.plan.createdAt.toDate ? this.plan.createdAt.toDate() : new Date(this.plan.createdAt);
+                                                return d.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                                              })()
+                                            : 'Fecha no disponible'
+                                        }
+                                    </p>
+                                    <p style="font-size: 0.8rem; color: var(--text-dim); margin: 0.2rem 0 0;">Fecha en que se abrió el plan de acción</p>
+                                </div>
+                            </div>
                         </section>
                         
                         ${isLead && this.plan.status !== 'completado' && allTasksCompleted ? `
@@ -303,7 +372,7 @@ export class ActionPlanDetailView extends View {
         // Configurar botón de edición si tiene permiso
         const editPlanBtn = document.getElementById('edit-plan-btn');
         if (editPlanBtn) {
-            editPlanBtn.onclick = () => this.showEditPlanModal();
+            editPlanBtn.onclick = () => this.app.navigateTo(`plans/edit/${this.planId}`);
         }
 
         // Eventos de Filtros

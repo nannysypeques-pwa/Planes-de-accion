@@ -44,7 +44,67 @@ export const FirebaseService = {
     },
 
     // PLANES DE ACCIÓN
-    async createActionPlan(planData) {
+    async getActionPlan(planId) {
+        try {
+            const doc = await db.collection('action_plans').doc(planId).get();
+            if (doc.exists) return { id: doc.id, ...doc.data() };
+            return null;
+        } catch (error) {
+            console.error("Error al obtener plan:", error);
+            return null;
+        }
+    },
+
+    async updateActionPlan(planId, planData) {
+        try {
+            const sanitizedPlan = {
+                ...planData,
+                title: SecurityUtils.sanitizeText(planData.title || '', 100),
+                area: SecurityUtils.sanitizeText(planData.area || '', 50)
+            };
+            await db.collection('action_plans').doc(planId).update({
+                ...sanitizedPlan,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return planId;
+        } catch (error) {
+            console.error('Error al actualizar plan:', error);
+            throw error;
+        }
+    },
+
+    async saveActionPlanDraft(planData, draftId = null) {
+        try {
+            const sanitizedPlan = {
+                ...planData,
+                title: SecurityUtils.sanitizeText(planData.title || '', 100),
+                description: SecurityUtils.sanitizeText(planData.description || '', 500),
+                area: SecurityUtils.sanitizeText(planData.area || '', 50)
+            };
+
+            const dataToSave = {
+                ...sanitizedPlan,
+                status: 'borrador',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            };
+
+            if (draftId) {
+                await db.collection('action_plans').doc(draftId).update(dataToSave);
+                return draftId;
+            } else {
+                dataToSave.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                dataToSave.progress = 0;
+                dataToSave.risk = 'green';
+                const res = await db.collection('action_plans').add(dataToSave);
+                return res.id;
+            }
+        } catch (error) {
+            console.error("Error al guardar borrador:", error);
+            throw error;
+        }
+    },
+
+    async createActionPlan(planData, draftId = null) {
         try {
             // Sanitización de seguridad
             const sanitizedPlan = {
@@ -54,14 +114,23 @@ export const FirebaseService = {
                 area: SecurityUtils.sanitizeText(planData.area, 50)
             };
 
-            const res = await db.collection('action_plans').add({
+            const dataToSave = {
                 ...sanitizedPlan,
                 status: 'pendiente',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 progress: 0,
                 risk: 'green'
-            });
-            return res.id;
+            };
+
+            if (draftId) {
+                // Actualizar borrador existente a plan formal
+                await db.collection('action_plans').doc(draftId).update(dataToSave);
+                return draftId;
+            } else {
+                dataToSave.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                const res = await db.collection('action_plans').add(dataToSave);
+                return res.id;
+            }
         } catch (error) {
             console.error("Error al crear plan:", error);
             throw error;
@@ -106,9 +175,30 @@ export const FirebaseService = {
         };
         return await db.collection('tasks').add({
             ...sanitizedTask,
-            status: 'pendiente',
+            status: taskData.status || 'pendiente',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+    },
+
+    async updateTask(taskId, taskData) {
+        try {
+            await db.collection('tasks').doc(taskId).update({
+                ...taskData,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error al actualizar tarea:", error);
+            throw error;
+        }
+    },
+
+    async deleteTask(taskId) {
+        try {
+            await db.collection('tasks').doc(taskId).delete();
+        } catch (error) {
+            console.error("Error al eliminar tarea:", error);
+            throw error;
+        }
     },
 
     async getTasksByPlanIds(planIds) {

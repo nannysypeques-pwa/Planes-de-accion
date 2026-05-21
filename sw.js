@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sistema-interno-v4-5';
+const CACHE_NAME = 'sistema-interno-v4-6';
 const ASSETS = [
   './',
   './index.html',
@@ -39,21 +39,34 @@ self.addEventListener('activate', (event) => {
 
 // Estrategia de Cache: Stale-while-revalidate para el Shell
 self.addEventListener('fetch', (event) => {
+  // Solo cachear peticiones GET del mismo origen
   if (!event.request.url.startsWith(self.location.origin)) return;
+  if (event.request.method !== 'GET') return;
+  // No cachear rangos parciales (respuestas de video/audio)
+  if (event.request.headers.get('range')) return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      const fetchedResponse = fetch(event.request).then((networkResponse) => {
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, networkResponse.clone());
-        });
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Solo cachear respuestas válidas (status 200, tipo básico)
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          networkResponse.type === 'basic'
+        ) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
         return networkResponse;
-      });
+      }).catch(() => cachedResponse); // Si falla la red, usar caché
 
-      return cachedResponse || fetchedResponse;
+      return cachedResponse || fetchPromise;
     })
   );
 });
+
 
 // --- FIREBASE MESSAGING ---
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
