@@ -866,7 +866,7 @@ export class ActionPlanDetailView extends View {
                     <input type="checkbox" value="${m.uid}" id="m-${m.uid}" 
                         ${isChecked ? 'checked' : ''} ${isLead ? 'disabled' : ''}
                         style="display:none;"
-                        onchange="this.closest('.member-select-card').classList.toggle('selected', this.checked)">
+                        onchange="const card = this.closest('.member-select-card'); card.classList.toggle('selected', this.checked); const circle = card.querySelector('.check-circle'); circle.classList.toggle('checked', this.checked); circle.textContent = this.checked ? '✓' : '';">
                     <div class="member-avatar-lg">${initials}</div>
                     <div class="member-select-info">
                         <strong>${m.name}${isLead ? ' <span class="lead-badge">Líder</span>' : ''}</strong>

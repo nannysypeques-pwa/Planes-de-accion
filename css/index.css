@@ -835,7 +835,7 @@ button.primary-btn:active {
 /* Plan Detail Styles */
 .plan-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     gap: 2rem;
     margin-top: 2rem;
 }
@@ -3494,6 +3494,10 @@ input[type="date"] {
 
     .hamburger-btn {
         display: flex;
+    }
+
+    .plan-grid {
+        grid-template-columns: 1fr;
     }
 }
 
