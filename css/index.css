@@ -4142,6 +4142,49 @@ input[type="date"] {
     margin: 0 auto;
 }
 
+/* Tabs switcher for active vs archived notes */
+.keep-tabs-container {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1.5px solid var(--border);
+    padding-bottom: 0.5rem;
+}
+
+.keep-tab-btn {
+    background: transparent;
+    border: none;
+    padding: 0.6rem 1.8rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+}
+
+.keep-tab-btn:hover {
+    color: var(--rosa-strong);
+}
+
+.keep-tab-btn.active {
+    color: var(--rosa-strong);
+}
+
+.keep-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -0.65rem;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--rosa-med);
+    border-radius: 3px 3px 0 0;
+}
+
+
 /* Área Filters - Clean Minimal Pills */
 .keep-area-filters {
     display: flex;

@@ -13,6 +13,7 @@ export class KeepView extends View {
         this.isListMode = false;
         this.allNotes = [];
         this.teamMembers = [];
+        this.currentTab = 'active';
     }
 
     async render() {
@@ -37,6 +38,11 @@ export class KeepView extends View {
         container.innerHTML = `
             <div class="keep-view-container">
                 ${areaFiltersHtml}
+
+                <div class="keep-tabs-container">
+                    <button class="keep-tab-btn active" id="keep-tab-active">Notas</button>
+                    <button class="keep-tab-btn" id="keep-tab-archived">Archivo (30d)</button>
+                </div>
 
                 <!-- Quick Input -->
                 <div class="keep-quick-input-container">
@@ -171,10 +177,66 @@ export class KeepView extends View {
         } catch (error) {
             console.error("Error loading team members:", error);
         }
+        this.currentTab = 'active';
+        this.setupTabs();
         this.setupQuickInput();
         this.setupEditModal();
         this.setupAreaFilters();
+        this.cleanOldArchivedNotes();
         this.listenToNotes();
+    }
+
+    setupTabs() {
+        const tabActive = document.getElementById('keep-tab-active');
+        const tabArchived = document.getElementById('keep-tab-archived');
+        const quickInputContainer = document.querySelector('.keep-quick-input-container');
+
+        if (!tabActive || !tabArchived) return;
+
+        tabActive.onclick = () => {
+            if (this.currentTab === 'active') return;
+            this.currentTab = 'active';
+            tabActive.classList.add('active');
+            tabArchived.classList.remove('active');
+            if (quickInputContainer) quickInputContainer.style.display = 'block';
+            this.listenToNotes();
+        };
+
+        tabArchived.onclick = () => {
+            if (this.currentTab === 'archived') return;
+            this.currentTab = 'archived';
+            tabArchived.classList.add('active');
+            tabActive.classList.remove('active');
+            if (quickInputContainer) quickInputContainer.style.display = 'none';
+            this.listenToNotes();
+        };
+    }
+
+    async cleanOldArchivedNotes() {
+        const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        try {
+            const snapshot = await db.collection('keep_notes')
+                .where('isArchived', '==', true)
+                .get();
+                
+            const batch = db.batch();
+            let count = 0;
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const updatedTime = data.updatedAt ? data.updatedAt.toDate().getTime() : 0;
+                if (updatedTime && updatedTime < thirtyDaysAgo) {
+                    batch.delete(doc.ref);
+                    count++;
+                }
+            });
+            
+            if (count > 0) {
+                await batch.commit();
+                console.log(`[Keep Cleanup] Eliminadas ${count} notas archivadas con más de 30 días.`);
+            }
+        } catch (error) {
+            console.error("Error al limpiar notas archivadas antiguas:", error);
+        }
     }
 
     setupAreaFilters() {
@@ -416,25 +478,54 @@ export class KeepView extends View {
         const othersContainer = document.getElementById('keep-others-masonry');
         othersContainer.innerHTML = `<div class="loading-inline">Cargando notas de ${this.currentArea}...</div>`;
 
+        const isArchivedMode = this.currentTab === 'archived';
+
         this.unsubscribe = db.collection('keep_notes')
             .where('area', '==', this.currentArea)
-            .where('isArchived', '==', false)
+            .where('isArchived', '==', isArchivedMode)
             .onSnapshot(snapshot => {
-                const notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                let notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (isArchivedMode) {
+                    // Filtrar solo las archivadas en los últimos 30 días
+                    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+                    notes = notes.filter(n => {
+                        const t = n.updatedAt ? n.updatedAt.toDate().getTime() : 0;
+                        return t >= thirtyDaysAgo;
+                    });
+                }
+                
                 this.allNotes = notes;
                 
-                // Ordenar por fecha de actualización descendente (simulado ya que no podemos ordenar con where mixto sin índice)
+                // Ordenar por fecha de actualización descendente
                 notes.sort((a, b) => {
                     const timeA = a.updatedAt ? a.updatedAt.toMillis() : 0;
                     const timeB = b.updatedAt ? b.updatedAt.toMillis() : 0;
                     return timeB - timeA;
                 });
 
-                const pinned = notes.filter(n => n.isPinned);
-                const others = notes.filter(n => !n.isPinned);
+                if (isArchivedMode) {
+                    const pinnedSection = document.getElementById('keep-pinned-section');
+                    if (pinnedSection) pinnedSection.classList.add('hidden');
+                    
+                    this.renderNotes(notes, 'keep-others-masonry', 'keep-others-section', false);
+                    
+                    if (notes.length === 0) {
+                        othersContainer.innerHTML = `
+                            <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-dim);">
+                                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📦</span>
+                                <p style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 600; margin: 0 0 0.5rem 0;">No hay notas archivadas en los últimos 30 días</p>
+                                <span style="font-size: 0.85rem; color: var(--text-dim); display: block;">Las notas aquí archivadas se eliminarán automáticamente después de 30 días.</span>
+                            </div>
+                        `;
+                    }
+                } else {
+                    const pinned = notes.filter(n => n.isPinned);
+                    const others = notes.filter(n => !n.isPinned);
 
-                this.renderNotes(pinned, 'keep-pinned-masonry', 'keep-pinned-section');
-                this.renderNotes(others, 'keep-others-masonry', 'keep-others-section', pinned.length > 0);
+                    this.renderNotes(pinned, 'keep-pinned-masonry', 'keep-pinned-section');
+                    this.renderNotes(others, 'keep-others-masonry', 'keep-others-section', pinned.length > 0);
+                }
             }, error => {
                 console.error("Error al escuchar notas:", error);
                 othersContainer.innerHTML = '<p class="error-msg">Error de permisos o conexión al cargar las notas.</p>';
@@ -664,11 +755,13 @@ export class KeepView extends View {
             if (archBtn) {
                 archBtn.onclick = async (e) => {
                     e.stopPropagation();
+                    const noteObj = notes.find(n => n.id === card.dataset.id) || {};
+                    const nextArchived = !noteObj.isArchived;
                     await db.collection('keep_notes').doc(card.dataset.id).update({
-                        isArchived: true,
+                        isArchived: nextArchived,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    ToastService.success("Nota archivada");
+                    ToastService.success(nextArchived ? "Nota archivada" : "Nota desarchivada");
                 };
             }
 
@@ -815,7 +908,7 @@ export class KeepView extends View {
                         <input type="datetime-local" class="keep-reminder-input" style="position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none;" title="Programar recordatorio">
                     </div>
                     
-                    <button class="keep-tool-btn tool-archive-btn" title="Archivar">📦</button>
+                    <button class="keep-tool-btn tool-archive-btn" title="${note.isArchived ? 'Desarchivar' : 'Archivar'}">${note.isArchived ? '📥' : '📦'}</button>
                 </div>
             </div>
         `;
@@ -904,11 +997,20 @@ export class KeepView extends View {
 
         archBtn.onclick = async () => {
             const noteId = document.getElementById('edit-note-id').value;
-            await db.collection('keep_notes').doc(noteId).update({
-                isArchived: true,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            ToastService.success("Nota archivada");
+            try {
+                const doc = await db.collection('keep_notes').doc(noteId).get();
+                if (doc.exists) {
+                    const note = doc.data();
+                    const nextArchived = !note.isArchived;
+                    await db.collection('keep_notes').doc(noteId).update({
+                        isArchived: nextArchived,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    ToastService.success(nextArchived ? "Nota archivada" : "Nota desarchivada");
+                }
+            } catch (error) {
+                console.error("Error al archivar/desarchivar:", error);
+            }
             overlay.classList.remove('active');
         };
     }
@@ -953,6 +1055,12 @@ export class KeepView extends View {
                     bodyInput.style.height = 'auto';
                     bodyInput.style.height = (bodyInput.scrollHeight) + 'px';
                 }, 10);
+            }
+
+            const editArchBtn = document.getElementById('edit-archive-btn');
+            if (editArchBtn) {
+                editArchBtn.title = note.isArchived ? 'Desarchivar' : 'Archivar';
+                editArchBtn.textContent = note.isArchived ? '📥' : '📦';
             }
 
             document.getElementById('keep-edit-modal').classList.add('active');
