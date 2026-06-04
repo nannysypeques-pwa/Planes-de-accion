@@ -1,6 +1,7 @@
 import { View } from './View.js';
 import { FirebaseService } from '../services/FirebaseService.js';
 import { ToastService } from '../services/ToastService.js';
+import { TaskUtils } from '../utils.js';
 
 export class ActionPlanDetailView extends View {
     constructor(app, planId) {
@@ -25,14 +26,38 @@ export class ActionPlanDetailView extends View {
             const isMember = this.plan.members_ids?.includes(this.app.currentUser.uid);
             const canEditTask = isManager || isLead;
             
-            // Regla: Gerente edita todo, coordinador/miembro solo lo que crearon
+            // Regla: Gerente edita todo, o si es el líder del plan, o si es creador coordinador/miembro
             const canEdit = this.app.currentUser.role === 'gerente' || 
+                           isLead ||
                            (['coordinador', 'coordinadora', 'miembro'].includes(this.app.currentUser.role) && 
                             this.plan.creator_id === this.app.currentUser.uid);
             // Cargar tareas para validar paso 10
             const taskSnap = await db.collection('tasks').where('plan_id', '==', this.planId).get();
-            const tasksData = taskSnap.docs.map(doc => doc.data());
+            const rawTasksData = taskSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const tasksData = TaskUtils.computeDynamicStatuses(rawTasksData);
             const allTasksCompleted = tasksData.length > 0 && tasksData.every(t => t.status === 'completado');
+
+            // Calcular progreso dinámico unificado
+            let computedProgress = this.plan.progress || 0;
+            if (tasksData.length > 0) {
+                const total = tasksData.length;
+                const counts = tasksData.reduce((acc, t) => {
+                    acc[t.status] = (acc[t.status] || 0) + 1;
+                    return acc;
+                }, {});
+                const completadas = counts['completado'] || 0;
+                const enProceso = counts['en_proceso'] || 0;
+
+                const now = new Date();
+                now.setHours(0,0,0,0);
+                const vencidas = tasksData.filter(t => {
+                    if (t.status === 'completado' || !t.due_date) return false;
+                    const d = new Date(t.due_date + 'T00:00:00');
+                    return d < now;
+                }).length;
+                const score = ((completadas * 1) + (enProceso * 0.5) - (vencidas * 0.1)) / total;
+                computedProgress = Math.max(0, Math.min(100, Math.round(score * 100)));
+            }
 
             container.innerHTML = `
                 <div class="view-header">
@@ -220,8 +245,8 @@ export class ActionPlanDetailView extends View {
                         </div>
                         <div class="meta-item">
                             <span>Progreso:</span>
-                            <div class="progress-bar lg"><div class="progress" style="width: ${this.plan.progress}%"></div></div>
-                            <small>${this.plan.progress}% completado</small>
+                            <div class="progress-bar lg"><div class="progress" style="width: ${computedProgress}%"></div></div>
+                            <small>${computedProgress}% completado</small>
                         </div>
 
                         ${isLead && (!this.plan.members_ids || this.plan.members_ids.length === 0) ? `
@@ -337,6 +362,7 @@ export class ActionPlanDetailView extends View {
         const isLead = this.app.currentUser.uid === this.plan.lead_id;
         const isManager = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role);
         const canEdit = this.app.currentUser.role === 'gerente' || 
+                       isLead ||
                        (['coordinador', 'coordinadora', 'miembro'].includes(this.app.currentUser.role) && 
                         this.plan.creator_id === this.app.currentUser.uid);
 
@@ -475,7 +501,9 @@ export class ActionPlanDetailView extends View {
         const container = document.getElementById('tasks-container');
         try {
             const snapshot = await db.collection('tasks').where('plan_id', '==', this.planId).get();
-            const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const rawTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const allTasks = TaskUtils.computeDynamicStatuses(rawTasks);
+            this.allPlanTasksData = allTasks; // Store full list for edit access
 
             // Calcular conteos para los filtros
             const counts = {
@@ -554,6 +582,17 @@ export class ActionPlanDetailView extends View {
             const days = daysLeft(t.due_date);
             const timeStatus = days === null ? '' : (days < 0 ? 'st-overdue' : (days <= 3 ? 'st-soon' : 'st-ontime'));
             
+            
+            const lastNoteHtml = t.lastNote ? `
+                <div class="task-last-note">
+                    <span style="font-size: 0.95rem; margin-top: 1px;">💬</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong>${t.lastNoteBy || 'Actualización'}</strong>
+                        <span style="opacity: 0.9;">${t.lastNote}</span>
+                    </div>
+                </div>
+            ` : '';
+
             let daysHtml = '';
             if (t.status !== 'completado' && days !== null) {
                 if (days < 0)      daysHtml = `<span class="days-chip overdue">⚠️ ${Math.abs(days)} días vencida</span>`;
@@ -588,6 +627,7 @@ export class ActionPlanDetailView extends View {
                             ${isSub ? '<span class="subtask-indicator">↳</span>' : ''}
                             ${t.title}
                         </h4>
+                        ${lastNoteHtml}
                         <div class="task-row-meta">
                             <div class="task-person">
                                 <div class="avatar-sm">${resp ? initials(resp.name) : '?'}</div>
@@ -907,8 +947,10 @@ export class ActionPlanDetailView extends View {
         const modal = document.getElementById('task-modal');
         const members = await FirebaseService.getAllMembers();
         const planMembers = members.filter(m => (this.plan.members_ids || []).includes(m.uid) || m.uid === this.plan.lead_id);
-        const taskToEdit = taskId ? this.tasksData.find(t => t.id === taskId) : null;
+        const allTasks = this.allPlanTasksData || this.tasksData || [];
+        const taskToEdit = taskId ? allTasks.find(t => t.id === taskId) : null;
         const currentParentId = taskToEdit ? taskToEdit.parent_id : parentId;
+        const hasSubtasks = taskToEdit ? allTasks.some(t => t.parent_id === taskToEdit.id) : false;
 
         if (!modal) {
             const div = this.createEl('div', 'modal hidden', '');
@@ -961,11 +1003,12 @@ export class ActionPlanDetailView extends View {
 
                 <div class="input-group">
                     <label>Estado Inicial</label>
-                    <select id="task-status" class="search-input">
+                    <select id="task-status" class="search-input" ${hasSubtasks ? 'disabled' : ''}>
                         <option value="pendiente" ${taskToEdit?.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
                         <option value="en_proceso" ${taskToEdit?.status === 'en_proceso' ? 'selected' : ''}>⚡ En Proceso</option>
                         <option value="completado" ${taskToEdit?.status === 'completado' ? 'selected' : ''}>✅ Completada</option>
                     </select>
+                    ${hasSubtasks ? '<small style="color: var(--rosa-strong); display: block; margin-top: 0.3rem;">El estado se calcula automáticamente a partir de sus subtareas.</small>' : ''}
                 </div>
 
                 <div class="modal-actions">
@@ -998,6 +1041,16 @@ export class ActionPlanDetailView extends View {
                 btn.disabled = false;
                 btn.textContent = taskToEdit ? "Guardar Cambios" : "Guardar Tarea";
                 return ToastService.warning("Asigna un responsable");
+            }
+            if (!startDate) {
+                btn.disabled = false;
+                btn.textContent = taskToEdit ? "Guardar Cambios" : "Guardar Tarea";
+                return ToastService.warning("La fecha de inicio es obligatoria");
+            }
+            if (!dueDate) {
+                btn.disabled = false;
+                btn.textContent = taskToEdit ? "Guardar Cambios" : "Guardar Tarea";
+                return ToastService.warning("La fecha límite es obligatoria");
             }
 
             try {

@@ -1,6 +1,7 @@
 import { View } from './View.js';
 import { FirebaseService } from '../services/FirebaseService.js';
 import { ToastService } from '../services/ToastService.js';
+import { TaskUtils } from '../utils.js';
 
 export class CronogramaView extends View {
     constructor(app) {
@@ -178,6 +179,8 @@ export class CronogramaView extends View {
         
         const sortedMembers = me ? [me, ...others] : others;
 
+        const processedTasks = TaskUtils.computeDynamicStatuses(this.allTasks);
+
         container.innerHTML = `
             <div class="chrono-unified-viewport" id="master-viewport">
                 <div class="chrono-unified-track" style="width: ${this.trackW + 320}px">
@@ -188,7 +191,7 @@ export class CronogramaView extends View {
                     <div class="chrono-rows-container">
                         ${sortedMembers.map(m => {
                             const isExpanded = this.expandedMembers.has(m.uid);
-                            const mTasks = this.allTasks.filter(t => t.assigned_id === m.uid && t.status !== 'cancelada');
+                            const mTasks = processedTasks.filter(t => t.assigned_id === m.uid && t.status !== 'cancelada');
                             return this.renderMemberRows(m, mTasks, isExpanded);
                         }).join('')}
                     </div>
@@ -417,6 +420,12 @@ export class CronogramaView extends View {
                 if (!isOwner) {
                     return ToastService.warning("Solo lectura.");
                 }
+
+                const hasSubtasks = this.allTasks.some(ot => ot.parent_id === task.id);
+                if (hasSubtasks) {
+                    return ToastService.warning("El estado de esta tarea se calcula automáticamente por sus subtareas.");
+                }
+
                 this.openStatusModal(taskId, bar.dataset.title, bar.dataset.status);
             };
         });

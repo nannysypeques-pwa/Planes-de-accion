@@ -3143,14 +3143,17 @@ input[type="date"] {
 
 /* --- Sistema de Notas --- */
 .task-last-note {
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(210, 50, 143, 0.03);
     border-radius: var(--radius-sm);
-    padding: 0.6rem 0.8rem;
+    padding: 0.6rem 0.9rem;
     margin: 0.5rem 0 0.8rem 0;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--text-main);
     border-left: 3px solid var(--rosa-med);
     line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
 }
 
 .task-last-note strong {
@@ -3158,7 +3161,7 @@ input[type="date"] {
     display: block;
     font-size: 0.7rem;
     text-transform: uppercase;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.1rem;
 }
 
 .task-action-bar:hover {

@@ -1,6 +1,7 @@
 import { View } from './View.js';
 import { FirebaseService } from '../services/FirebaseService.js';
 import { ToastService } from '../services/ToastService.js';
+import { TaskUtils } from '../utils.js';
 
 export class TasksView extends View {
     constructor(app) {
@@ -110,7 +111,15 @@ export class TasksView extends View {
                 .where('assigned_id', '==', this.app.currentUser.uid)
                 .get();
             
-            let allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let myTasksRaw = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const myPlanIds = [...new Set(myTasksRaw.map(t => t.plan_id))];
+            let allTasks = [];
+            
+            if (myPlanIds.length > 0) {
+                const allPlanTasks = await FirebaseService.getTasksByPlanIds(myPlanIds);
+                const processedTasks = TaskUtils.computeDynamicStatuses(allPlanTasks);
+                allTasks = processedTasks.filter(t => t.assigned_id === this.app.currentUser.uid);
+            }
 
             // 1. Obtener todos los planes involucrados
             const planIds = [...new Set(allTasks.map(t => t.plan_id))];
@@ -217,7 +226,15 @@ export class TasksView extends View {
                                 else if (t.status === 'cancelada') indicator = 'indicator-cancelada';
                                 if (diffDays < 0 && !['completado', 'cancelada'].includes(t.status)) indicator = 'indicator-red';
 
-                                const lastNote = t.lastNote ? `<div class="task-last-note"><strong>💬 ${t.lastNoteBy || 'Nota'}:</strong> ${t.lastNote}</div>` : '';
+                                const lastNote = t.lastNote ? `
+                                    <div class="task-last-note">
+                                        <span style="font-size: 0.95rem; margin-top: 1px;">💬</span>
+                                        <div style="flex: 1; min-width: 0;">
+                                            <strong>${t.lastNoteBy || 'Actualización'}</strong>
+                                            <span style="opacity: 0.9;">${t.lastNote}</span>
+                                        </div>
+                                    </div>
+                                ` : '';
                                 const hasChildren = !isSub && subtasks.some(s => s.parent_id === t.id);
 
                                 return `
@@ -239,7 +256,7 @@ export class TasksView extends View {
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                                 <span style="font-size: 0.65rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Estado:</span>
-                                                <select class="status-selector-sm" data-id="${t.id}" data-title="${t.title}" style="font-size: 0.65rem; padding: 0.3rem 1.5rem 0.3rem 0.6rem;">
+                                                <select class="status-selector-sm" data-id="${t.id}" data-title="${t.title}" ${hasChildren ? 'disabled' : ''} style="font-size: 0.65rem; padding: 0.3rem 1.5rem 0.3rem 0.6rem;">
                                                     <option value="pendiente" ${t.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
                                                     <option value="en_proceso" ${t.status === 'en_proceso' ? 'selected' : ''}>⚡ En Proceso</option>
                                                     <option value="completado" ${t.status === 'completado' ? 'selected' : ''}>✅ Completada</option>

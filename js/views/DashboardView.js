@@ -1,5 +1,6 @@
 import { View } from './View.js';
 import { FirebaseService } from '../services/FirebaseService.js';
+import { TaskUtils } from '../utils.js';
 
 export class DashboardView extends View {
     async render() {
@@ -23,7 +24,8 @@ export class DashboardView extends View {
         const activePlanIds = activePlans.map(p => p.id);
 
         // Obtener tareas de los planes activos para medir Cards 2 y 3
-        const allTasks = await FirebaseService.getTasksByPlanIds(activePlanIds);
+        const rawTasks = await FirebaseService.getTasksByPlanIds(activePlanIds);
+        const allTasks = TaskUtils.computeDynamicStatuses(rawTasks);
 
         const now = new Date();
         now.setHours(0,0,0,0);
@@ -214,27 +216,78 @@ export class DashboardView extends View {
         const end = document.getElementById('date-end').value;
 
         try {
-            let plans = await FirebaseService.getPlansByRole(this.app.currentUser);
-            
-            // Lógica por defecto: Si no hay filtros aplicados, solo mostrar activos (no completados ni cancelados)
-            const isNeutral = (area === 'all' && lead === 'all' && status === 'all' && period === 'all');
-            
-            if (isNeutral) {
-                plans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelada');
-            }
+            const rawPlans = await FirebaseService.getPlansByRole(this.app.currentUser);
+            const now = new Date();
+            now.setHours(0,0,0,0);
 
-            // Aplicar filtros específicos
+            // 1. Obtener tareas para cálculos dinámicos sobre todos los planes disponibles
+            const planIds = rawPlans.map(p => p.id);
+            const rawTasks = await FirebaseService.getTasksByPlanIds(planIds);
+            const allTasks = TaskUtils.computeDynamicStatuses(rawTasks);
+            const tasksByPlan = {};
+            allTasks.forEach(t => {
+                if (!tasksByPlan[t.plan_id]) tasksByPlan[t.plan_id] = [];
+                tasksByPlan[t.plan_id].push(t);
+            });
+
+            // 2. Pre-calcular el estado dinámico y el progreso dinámico para cada plan
+            rawPlans.forEach(p => {
+                const tasks = tasksByPlan[p.id] || [];
+                let dynamicStatus = p.status || 'pendiente';
+                let dynamicProgress = p.progress || 0;
+
+                if (tasks.length > 0) {
+                    const total = tasks.length;
+                    const counts = tasks.reduce((acc, t) => {
+                        acc[t.status] = (acc[t.status] || 0) + 1;
+                        return acc;
+                    }, {});
+
+                    const completadas = counts['completado'] || 0;
+                    const enProceso = counts['en_proceso'] || 0;
+                    const pendientes = counts['pendiente'] || 0;
+                    const canceladas = counts['cancelada'] || 0;
+
+                    if (completadas === total) {
+                        dynamicStatus = 'completado';
+                    } else {
+                        // Determinar el más frecuente de los estados activos no completados
+                        // Excluimos 'completado' porque no todas las tareas están completadas
+                        const stats = [
+                            { s: 'en_proceso', c: enProceso },
+                            { s: 'pendiente', c: pendientes },
+                            { s: 'cancelada', c: canceladas }
+                        ];
+                        stats.sort((a, b) => b.c - a.c);
+                        dynamicStatus = stats[0].s;
+                    }
+
+                    // Calcular Progreso (% Cronograma)
+                    const vencidas = tasks.filter(t => {
+                        if (t.status === 'completado' || !t.due_date) return false;
+                        const d = new Date(t.due_date + 'T00:00:00');
+                        return d < now;
+                    }).length;
+
+                    const score = ((completadas * 1) + (enProceso * 0.5) - (vencidas * 0.1)) / total;
+                    dynamicProgress = Math.max(0, Math.min(100, Math.round(score * 100)));
+                }
+
+                p.dynamicStatus = dynamicStatus;
+                p.dynamicProgress = dynamicProgress;
+            });
+
+            // 3. Aplicar filtros sobre el estado dinámico y propiedades calculadas
+            let plans = rawPlans;
+
             plans = plans.filter(p => {
                 const matchArea = area === 'all' || p.area === area;
                 const matchLead = lead === 'all' || p.lead_id === lead;
-                const matchStatus = status === 'all' || p.status === status;
+                const matchStatus = status === 'all' || p.dynamicStatus === status;
                 return matchArea && matchLead && matchStatus;
             });
 
-            // Filtrar por periodo
-            const now = new Date();
-            now.setHours(0,0,0,0);
-            
+            // 4. Filtrar por periodo
             plans = plans.filter(p => {
                 if (period === 'all') return true;
                 if (!p.createdAt) return false;
@@ -258,7 +311,7 @@ export class DashboardView extends View {
                 return true;
             });
 
-            // Ordenar cronológicamente (más reciente primero)
+            // 5. Ordenar cronológicamente (más reciente primero)
             plans.sort((a, b) => {
                 const dateA = a.createdAt?.toDate() || new Date(0);
                 const dateB = b.createdAt?.toDate() || new Date(0);
@@ -274,15 +327,6 @@ export class DashboardView extends View {
             const allMembers = await FirebaseService.getAllMembers();
             const membersMap = {};
             allMembers.forEach(m => { membersMap[m.uid] = m; });
-
-            // NUEVO: Obtener tareas para cálculos dinámicos
-            const planIds = plans.map(p => p.id);
-            const allTasks = await FirebaseService.getTasksByPlanIds(planIds);
-            const tasksByPlan = {};
-            allTasks.forEach(t => {
-                if (!tasksByPlan[t.plan_id]) tasksByPlan[t.plan_id] = [];
-                tasksByPlan[t.plan_id].push(t);
-            });
 
             const headerHtml = `
                 <div class="plans-list-header">
@@ -331,11 +375,11 @@ export class DashboardView extends View {
                     if (completadas === total) {
                         dynamicStatus = 'completado';
                     } else {
-                        // Determinar el más frecuente (excluyendo canceladas si hay otras)
+                        // Determinar el más frecuente de los estados activos no completados
+                        // Excluimos 'completado' porque no todas las tareas están completadas
                         const stats = [
                             { s: 'en_proceso', c: enProceso },
                             { s: 'pendiente', c: pendientes },
-                            { s: 'completado', c: completadas },
                             { s: 'cancelada', c: canceladas }
                         ];
                         stats.sort((a, b) => b.c - a.c);
@@ -424,7 +468,8 @@ export class DashboardView extends View {
             const plansMap = {};
             activePlans.forEach(p => plansMap[p.id] = p.title);
 
-            const allTasks = await FirebaseService.getTasksByPlanIds(activePlanIds);
+            const rawTasks = await FirebaseService.getTasksByPlanIds(activePlanIds);
+            const allTasks = TaskUtils.computeDynamicStatuses(rawTasks);
 
             let filteredTasks = [];
             if (type === 'upcoming') {
