@@ -582,6 +582,9 @@ export class ActionPlanDetailView extends View {
             const days = daysLeft(t.due_date);
             const timeStatus = days === null ? '' : (days < 0 ? 'st-overdue' : (days <= 3 ? 'st-soon' : 'st-ontime'));
             
+            // Permitir modificar si es manager, líder del proyecto o responsable asignado a la tarea
+            const isAssigned = this.app.currentUser.uid === t.assigned_id;
+            const canModifyThisTask = canEditTask || isAssigned;
             
             const lastNoteHtml = t.lastNote ? `
                 <div class="task-last-note">
@@ -609,19 +612,19 @@ export class ActionPlanDetailView extends View {
                 <div class="task-row-premium ${st.cls} ${timeStatus} ${isSub ? 'is-subtask' : ''} ${isSub ? 'hidden' : ''}" 
                      data-id="${t.id}" 
                      ${isSub ? `data-parent="${t.parent_id}"` : ''}>
-                    <div class="task-status-bar"></div>
-                    <div class="task-row-content">
-                        <div class="task-row-top">
-                            <span class="task-status-pill ${st.cls}">${st.icon} ${st.label}</span>
-                            ${daysHtml}
-                            ${canEditTask ? `
-                                <div class="task-actions">
-                                    ${!isSub ? `<button class="task-action-btn subtask" data-id="${t.id}">+ SUBTAREA</button>` : ''}
-                                    <button class="task-action-btn edit-task" data-id="${t.id}" title="Editar Tarea">✏️</button>
-                                    <button class="task-action-btn delete delete-task" data-id="${t.id}" title="Eliminar Tarea">🗑️</button>
-                                </div>
-                            ` : ''}
-                        </div>
+                     <div class="task-status-bar"></div>
+                     <div class="task-row-content">
+                         <div class="task-row-top">
+                             <span class="task-status-pill ${st.cls}">${st.icon} ${st.label}</span>
+                             ${daysHtml}
+                             ${canModifyThisTask ? `
+                                 <div class="task-actions">
+                                     ${!isSub ? `<button class="task-action-btn subtask" data-id="${t.id}">+ SUBTAREA</button>` : ''}
+                                     <button class="task-action-btn edit-task" data-id="${t.id}" title="Editar Tarea">✏️</button>
+                                     <button class="task-action-btn delete delete-task" data-id="${t.id}" title="Eliminar Tarea">🗑️</button>
+                                 </div>
+                             ` : ''}
+                         </div>
                         <h4 class="task-title" style="display: flex; align-items: center; gap: 0.5rem;">
                             ${!isSub && hasChildren ? `<button class="toggle-subtasks" data-id="${t.id}" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.2rem; transition: transform 0.3s;">⌄</button>` : ''}
                             ${isSub ? '<span class="subtask-indicator">↳</span>' : ''}

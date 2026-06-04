@@ -38,7 +38,10 @@ service cloud.firestore {
       allow create: if request.auth.uid != null;
       allow update, delete: if request.auth.uid == resource.data.creator_id || 
                             request.auth.uid == resource.data.assigned_id ||
-                            isManager();
+                            isManager() ||
+                            (resource.data.plan_id != null && 
+                             exists(/databases/$(database)/documents/action_plans/$(resource.data.plan_id)) &&
+                             get(/databases/$(database)/documents/action_plans/$(resource.data.plan_id)).data.lead_id == request.auth.uid);
       
       // Notas de seguimiento
       match /notes/{noteId} {
