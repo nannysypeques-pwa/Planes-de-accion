@@ -747,8 +747,9 @@ export class VacacionesView extends View {
                             </div>
                             <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim); margin-top: 4px;">días disponibles</div>
                             ${this.app.currentUser.role === 'gerente' && hasSetup ? `
-                                <div style="margin-top: 0.8rem; display: flex; justify-content: center;">
-                                    <button class="vac-edit-trigger shadow-sm" data-uid="${m.uid}" style="background:rgba(255,255,255,0.8); border:1px solid #ddd; cursor:pointer; font-size:1.1rem; padding: 4px 12px; border-radius: 12px; transition:0.2s;" onmouseover="this.style.background='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.8)'" title="Editar días disponibles">✏️ Editar</button>
+                                <div id="vac-actions-container-${m.uid}" style="margin-top: 0.8rem; display: flex; justify-content: center; gap: 8px;">
+                                    <button class="vac-edit-trigger shadow-sm" data-uid="${m.uid}" style="background:rgba(255,255,255,0.8); border:1px solid #ddd; cursor:pointer; font-size:0.9rem; padding: 6px 12px; border-radius: 12px; transition:0.2s; font-weight: 700;" onmouseover="this.style.background='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.8)'" title="Editar días disponibles">✏️ Editar</button>
+                                    <button class="vac-desglose-trigger shadow-sm" data-uid="${m.uid}" style="background:rgba(210, 50, 143, 0.08); border:1px solid rgba(210, 50, 143, 0.2); cursor:pointer; font-size:0.9rem; padding: 6px 12px; border-radius: 12px; transition:0.2s; color: var(--rosa-strong); font-weight: 700;" onmouseover="this.style.background='rgba(210, 50, 143, 0.15)'" onmouseout="this.style.background='rgba(210, 50, 143, 0.08)'" title="Ver desglose de días">📋 Desglose</button>
                                 </div>
                                 <div id="vac-edit-${m.uid}" style="display:none; margin-top: 0.8rem; align-items:center; justify-content:center; gap:5px; flex-direction:column;">
                                     <div style="display:flex; gap:5px; align-items:center;">
@@ -774,7 +775,7 @@ export class VacacionesView extends View {
                     if (editBtn) {
                         const uid = editBtn.dataset.uid;
                         document.getElementById('vac-edit-' + uid).style.display = 'flex';
-                        editBtn.parentElement.style.display = 'none';
+                        document.getElementById('vac-actions-container-' + uid).style.display = 'none';
                         return;
                     }
 
@@ -782,7 +783,14 @@ export class VacacionesView extends View {
                     if (cancelBtn) {
                         const uid = cancelBtn.dataset.uid;
                         document.getElementById('vac-edit-' + uid).style.display = 'none';
-                        document.querySelector(`.vac-edit-trigger[data-uid="${uid}"]`).parentElement.style.display = 'flex';
+                        document.getElementById('vac-actions-container-' + uid).style.display = 'flex';
+                        return;
+                    }
+
+                    const desgloseBtn = e.target.closest('.vac-desglose-trigger');
+                    if (desgloseBtn) {
+                        const uid = desgloseBtn.dataset.uid;
+                        this.showDesgloseModal(uid);
                         return;
                     }
 
@@ -1045,5 +1053,221 @@ export class VacacionesView extends View {
                 }
             };
         });
+    }
+
+    async showDesgloseModal(uid) {
+        try {
+            const userDoc = await db.collection('users').doc(uid).get();
+            if (!userDoc.exists) return ToastService.error("Usuario no encontrado");
+            const userData = { uid: userDoc.id, ...userDoc.data() };
+            
+            const stats = await FirebaseService.getUserVacationStats(userData);
+            
+            const reqSnap = await db.collection('vacation_requests')
+                .where('uid', '==', uid)
+                .get();
+            const requests = reqSnap.docs.map(doc => doc.data());
+            
+            const approvedReqs = requests.filter(r => r.status === 'aprobado_gerencia' || r.status === 'aprobado');
+            approvedReqs.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+
+            const hireDateStr = userData.hire_date;
+            const anniversaries = [];
+            let hireDateFormatted = "No asignada";
+            
+            if (hireDateStr) {
+                const hireDate = new Date(hireDateStr + 'T00:00:00');
+                hireDateFormatted = hireDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+                const now = new Date();
+                const years = (now - hireDate) / (1000 * 60 * 60 * 24 * 365.25);
+                const completeYears = Math.floor(years);
+                
+                let totalLFTAccum = 0;
+                for (let i = 1; i <= completeYears; i++) {
+                    const annivDate = new Date(hireDate);
+                    annivDate.setFullYear(hireDate.getFullYear() + i);
+                    
+                    let daysAdded = 0;
+                    if (i === 1) {
+                        daysAdded = 12;
+                    } else if (i === 2) {
+                        daysAdded = 14;
+                    } else if (i === 3) {
+                        daysAdded = 16;
+                    } else if (i === 4) {
+                        daysAdded = 18;
+                    } else if (i === 5) {
+                        daysAdded = 20;
+                    } else if (i >= 6 && i <= 10) {
+                        daysAdded = 22;
+                    } else if (i >= 11 && i <= 15) {
+                        daysAdded = 24;
+                    } else if (i >= 16 && i <= 20) {
+                        daysAdded = 26;
+                    } else if (i >= 21 && i <= 25) {
+                        daysAdded = 28;
+                    } else if (i >= 26 && i <= 30) {
+                        daysAdded = 30;
+                    } else if (i >= 31 && i <= 35) {
+                        daysAdded = 32;
+                    } else {
+                        const periodsOfFive = Math.floor((i - 6) / 5);
+                        daysAdded = 22 + (periodsOfFive * 2);
+                    }
+                    totalLFTAccum += daysAdded;
+                    
+                    anniversaries.push({
+                        year: i,
+                        date: annivDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }),
+                        daysAdded,
+                        totalLFTAccum
+                    });
+                }
+            }
+
+            const modalId = 'desglose-vac-modal';
+            const existing = document.getElementById(modalId);
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = modalId;
+            modal.style.cssText = `
+                position: fixed; inset: 0; z-index: 10000;
+                background: rgba(20, 20, 50, 0.6);
+                backdrop-filter: blur(8px);
+                display: flex; align-items: center; justify-content: center;
+                padding: 1.5rem;
+                animation: fadeIn 0.2s ease;
+            `;
+
+            const initials = (userData.name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            
+            let annivRowsHtml = '';
+            if (anniversaries.length === 0) {
+                annivRowsHtml = `<tr><td colspan="3" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">Aún no cumple el primer año de antigüedad.</td></tr>`;
+            } else {
+                annivRowsHtml = anniversaries.map(a => `
+                    <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+                        <td style="padding: 10px 8px; font-weight: 700; color: var(--azul-deep);">Año ${a.year}</td>
+                        <td style="padding: 10px 8px; color: var(--text-main); font-size: 0.9rem;">${a.date}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-weight: 800; color: var(--rosa-strong);">+${a.daysAdded} días <span style="font-size: 0.75rem; color: var(--text-dim); font-weight: 600;">(Acum: ${a.totalLFTAccum})</span></td>
+                    </tr>
+                `).join('');
+            }
+
+            let consumedRowsHtml = '';
+            if (approvedReqs.length === 0) {
+                consumedRowsHtml = `<div style="text-align: center; color: var(--text-dim); padding: 2rem 1rem;">No se registran vacaciones tomadas.</div>`;
+            } else {
+                consumedRowsHtml = approvedReqs.map(r => `
+                    <div style="background: var(--bg-light); border-radius: var(--radius-sm); padding: 10px 15px; border-left: 4px solid var(--azul-med); display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+                        <div>
+                            <div style="font-weight: 700; color: var(--azul-deep);">${r.full_dates || r.start_date + ' al ' + r.end_date}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Aprobado por Gerencia</div>
+                        </div>
+                        <div style="font-weight: 800; color: #ef4444; font-size: 1.05rem;">-${r.days_requested} días</div>
+                    </div>
+                `).join('<div style="height: 8px;"></div>');
+            }
+
+            modal.innerHTML = `
+                <div class="glass-effect" style="
+                    background: white;
+                    border-radius: var(--radius-lg);
+                    padding: 2rem;
+                    max-width: 700px;
+                    width: 100%;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    box-shadow: 0 30px 80px rgba(0,0,0,0.18);
+                    animation: slideUp 0.25s ease;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--rosa-light), var(--rosa-med)); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--rosa-strong); font-size: 1.1rem;">
+                                ${initials}
+                            </div>
+                            <div>
+                                <h3 style="color: var(--azul-deep); margin: 0; font-size: 1.25rem; font-weight: 800;">Desglose de Vacaciones</h3>
+                                <p style="color: var(--text-dim); margin: 2px 0 0 0; font-size: 0.85rem; font-weight: 600;">Colaborador: <span style="color: var(--rosa-strong); font-weight: 700;">${userData.name}</span></p>
+                            </div>
+                        </div>
+                        <button id="close-desglose-modal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-dim); padding: 4px; line-height: 1;">✕</button>
+                    </div>
+
+                    <div style="background: var(--bg-light); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1rem; text-align: center;">
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Fecha Ingreso</div>
+                            <div style="font-size: 0.9rem; font-weight: 700; color: var(--azul-deep); margin-top: 4px;">${hireDateFormatted}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Días Ley LFT</div>
+                            <div style="font-size: 1.1rem; font-weight: 800; color: var(--azul-med); margin-top: 2px;">${stats.baseTotal}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Ajustes Manuales</div>
+                            <div style="font-size: 1.1rem; font-weight: 800; color: ${stats.manualAdj >= 0 ? '#10b981' : '#ef4444'}; margin-top: 2px;">${stats.manualAdj >= 0 ? '+' : ''}${stats.manualAdj}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Consumidos</div>
+                            <div style="font-size: 1.1rem; font-weight: 800; color: #ef4444; margin-top: 2px;">${stats.used}</div>
+                        </div>
+                        <div style="border-left: 1px dashed var(--border); padding-left: 10px;">
+                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--rosa-strong); text-transform: uppercase; letter-spacing: 0.5px;">Disponibles</div>
+                            <div style="font-size: 1.3rem; font-weight: 900; color: var(--rosa-strong); margin-top: 1px;">${stats.available}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+                        <div>
+                            <h4 style="color: var(--azul-deep); font-weight: 800; border-bottom: 2px solid var(--rosa-light); padding-bottom: 6px; margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; font-size: 1rem;">
+                                <span>🎉</span> Días por Aniversario
+                            </h4>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                            <th style="padding: 6px 8px; font-weight: 700;">Antigüedad</th>
+                                            <th style="padding: 6px 8px; font-weight: 700;">Fecha</th>
+                                            <th style="padding: 6px 8px; text-align: right; font-weight: 700;">Días LFT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${annivRowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 style="color: var(--azul-deep); font-weight: 800; border-bottom: 2px solid var(--rosa-light); padding-bottom: 6px; margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; font-size: 1rem;">
+                                <span>🏝️</span> Días Consumidos
+                            </h4>
+                            <div style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                                ${consumedRowsHtml}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; justify-content: flex-end;">
+                        <button id="close-desglose-btn" class="primary-btn" style="min-width: 120px;">Cerrar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const closeModal = () => {
+                modal.style.animation = 'fadeIn 0.15s ease reverse';
+                setTimeout(() => modal.remove(), 150);
+            };
+
+            document.getElementById('close-desglose-modal').onclick = closeModal;
+            document.getElementById('close-desglose-btn').onclick = closeModal;
+            modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+        } catch (e) {
+            console.error("Error al obtener desglose de vacaciones:", e);
+            ToastService.error("Error al obtener el desglose de vacaciones.");
+        }
     }
 }

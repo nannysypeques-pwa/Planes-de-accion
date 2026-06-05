@@ -315,16 +315,36 @@ export const FirebaseService = {
         const years = (now - hireDate) / (1000 * 60 * 60 * 24 * 365.25);
         const completeYears = Math.floor(years);
 
-        if (completeYears < 1) return 0;
-        if (completeYears === 1) return 12;
-        if (completeYears === 2) return 14;
-        if (completeYears === 3) return 16;
-        if (completeYears === 4) return 18;
-        if (completeYears === 5) return 20;
-
-        // A partir del 6to año, aumentan 2 días por cada 5 años.
-        const periodsOfFive = Math.floor((completeYears - 6) / 5);
-        return 22 + (periodsOfFive * 2);
+        let total = 0;
+        for (let i = 1; i <= completeYears; i++) {
+            if (i === 1) {
+                total += 12;
+            } else if (i === 2) {
+                total += 14;
+            } else if (i === 3) {
+                total += 16;
+            } else if (i === 4) {
+                total += 18;
+            } else if (i === 5) {
+                total += 20;
+            } else if (i >= 6 && i <= 10) {
+                total += 22;
+            } else if (i >= 11 && i <= 15) {
+                total += 24;
+            } else if (i >= 16 && i <= 20) {
+                total += 26;
+            } else if (i >= 21 && i <= 25) {
+                total += 28;
+            } else if (i >= 26 && i <= 30) {
+                total += 30;
+            } else if (i >= 31 && i <= 35) {
+                total += 32;
+            } else {
+                const periodsOfFive = Math.floor((i - 6) / 5);
+                total += 22 + (periodsOfFive * 2);
+            }
+        }
+        return total;
     },
 
     async getUserVacationStats(user) {
