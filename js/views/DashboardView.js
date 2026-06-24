@@ -10,6 +10,7 @@ export class DashboardView extends View {
         // Obtener datos iniciales
         const plans = await FirebaseService.getPlansByRole(user);
         const members = await FirebaseService.getAllMembers();
+        this.members = members;
         
         // Extraer áreas únicas para filtros
         const areas = [...new Set(members.map(m => m.area).filter(a => !!a))].sort();
@@ -19,8 +20,19 @@ export class DashboardView extends View {
             ? members 
             : members.filter(m => m.area === user.area);
         
-        // Card 1: Planes Activos (Excluyendo terminados y cancelados)
-        const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelada');
+        // Cargar estado de filtros guardado
+        const savedState = JSON.parse(sessionStorage.getItem('dashboard_state') || '{}');
+        const defaultStatuses = ['pendiente', 'en_proceso', 'completado'];
+        const activeStatuses = savedState.selectedStatuses || defaultStatuses;
+        
+        const isChecked = (status) => activeStatuses.includes(status) ? 'checked' : '';
+        const isSelected = (field, value, defaultValue = 'all') => {
+            const savedValue = savedState[field] || defaultValue;
+            return savedValue === value ? 'selected' : '';
+        };
+        
+        // Card 1: Planes Activos (Excluyendo terminados, cumplidos y cancelados)
+        const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cumplido' && p.status !== 'cancelada' && p.status !== 'cancelado');
         const activePlanIds = activePlans.map(p => p.id);
 
         // Obtener tareas de los planes activos para medir Cards 2 y 3
@@ -81,9 +93,18 @@ export class DashboardView extends View {
             </div>
 
             <section class="dynamic-plans-section hidden" id="dynamic-plans-section">
-                <div class="section-header">
+                <div class="section-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                     <h2 id="dynamic-title">Detalle de Selección</h2>
-                    <button class="secondary-btn sm" id="close-dynamic">Cerrar detalle</button>
+                    ${user.role === 'gerente' ? `
+                    <div id="dynamic-filter-area-container" style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+                        <label for="dynamic-filter-area" style="font-size: 0.85rem; font-weight: 700; color: var(--rosa-strong); text-transform: uppercase; white-space: nowrap;">📂 Filtrar por Área:</label>
+                        <select class="filter-select" id="dynamic-filter-area" style="width: auto; min-width: 180px; padding: 0.4rem 2.5rem 0.4rem 1rem; font-size: 0.85rem; height: auto;">
+                            <option value="all">Todas las áreas</option>
+                            ${areas.map(a => `<option value="${a}">${a}</option>`).join('')}
+                        </select>
+                    </div>
+                    ` : ''}
+                    <button class="secondary-btn sm" id="close-dynamic" style="margin-left: ${user.role === 'gerente' ? '0' : 'auto'};">Cerrar detalle</button>
                 </div>
                 <div id="dynamic-plans-list"></div>
             </section>
@@ -97,15 +118,15 @@ export class DashboardView extends View {
                     </div>
                 </div>
 
-                <div class="filters-bar glass-effect" style="margin-top: 1rem; padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 2rem;">
-                    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end;">
+                <div class="filters-bar glass-effect" style="margin-top: 1rem; padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 2rem; overflow: visible;">
+                    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end; overflow: visible;">
                         
                         <div style="flex: 1.5; min-width: 180px;">
                             <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--rosa-strong); margin-bottom: 0.5rem; text-transform: uppercase;">📂 Área</label>
                             <select class="filter-select" id="filter-area">
-                                <option value="all">Todas las áreas</option>
+                                <option value="all" ${isSelected('filterArea', 'all')}>Todas las áreas</option>
                                 ${user.role === 'gerente' ? 
-                                    areas.map(a => `<option value="${a}">${a}</option>`).join('') :
+                                    areas.map(a => `<option value="${a}" ${isSelected('filterArea', a)}>${a}</option>`).join('') :
                                     `<option value="${user.area}" selected>${user.area}</option>`
                                 }
                             </select>
@@ -114,41 +135,62 @@ export class DashboardView extends View {
                         <div style="flex: 1.5; min-width: 180px;">
                             <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--rosa-strong); margin-bottom: 0.5rem; text-transform: uppercase;">👤 Responsable</label>
                             <select class="filter-select" id="filter-lead">
-                                <option value="all">Cualquier responsable</option>
-                                ${filteredMembers.map(m => `<option value="${m.uid}">${m.name}</option>`).join('')}
+                                <option value="all" ${isSelected('filterLead', 'all')}>Cualquier responsable</option>
+                                ${filteredMembers.map(m => `<option value="${m.uid}" ${isSelected('filterLead', m.uid)}>${m.name}</option>`).join('')}
                             </select>
                         </div>
 
-                        <div style="flex: 1; min-width: 150px;">
+                        <div style="flex: 1.5; min-width: 220px; position: relative;">
                             <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--rosa-strong); margin-bottom: 0.5rem; text-transform: uppercase;">📌 Estado</label>
-                            <select class="filter-select" id="filter-status">
-                                <option value="all">Todos los estados</option>
-                                <option value="pendiente">⏳ Pendiente</option>
-                                <option value="en_proceso">⚡ En Proceso</option>
-                                <option value="completado">✅ Completado</option>
-                                <option value="cancelada">🚫 Cancelada</option>
-                            </select>
+                            <div class="custom-multiselect" id="status-multiselect-container" style="position: relative; width: 100%;">
+                                <div class="multiselect-trigger" id="status-multiselect-trigger" style="background: var(--surface); border: 1.5px solid rgba(210,50,143,0.15); border-radius: 14px; padding: 0.8rem 1.2rem; font-size: 1rem; font-weight: 500; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; min-height: 52px; box-sizing: border-box; user-select: none; transition: all 0.3s ease;">
+                                    <span id="status-trigger-text" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Pendiente, En Proceso, Completado</span>
+                                    <span id="status-trigger-arrow" style="color: var(--rosa-med); font-size: 0.72rem; margin-left: 0.5rem; flex-shrink: 0; transition: transform 0.2s ease;">▼</span>
+                                </div>
+                                <div id="status-multiselect-dropdown" class="multiselect-dropdown" style="display: none; position: fixed; background: #ffffff; border: 1.5px solid rgba(210,50,143,0.12); border-radius: 14px; box-shadow: 0 12px 28px rgba(210,50,143,0.1); z-index: 9999; padding: 0.6rem; flex-direction: column; gap: 4px; min-width: 220px; max-height: 250px; overflow-y: auto;">
+                                    <label class="multiselect-option" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; color: var(--text-main); font-weight: 500; transition: background 0.15s ease;">
+                                        <input type="checkbox" value="pendiente" ${isChecked('pendiente')} style="width: 17px; height: 17px; accent-color: var(--rosa-strong); cursor: pointer; margin: 0; flex-shrink: 0;">
+                                        <span>⏳ Pendiente</span>
+                                    </label>
+                                    <label class="multiselect-option" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; color: var(--text-main); font-weight: 500; transition: background 0.15s ease;">
+                                        <input type="checkbox" value="en_proceso" ${isChecked('en_proceso')} style="width: 17px; height: 17px; accent-color: var(--rosa-strong); cursor: pointer; margin: 0; flex-shrink: 0;">
+                                        <span>⚡ En Proceso</span>
+                                    </label>
+                                    <label class="multiselect-option" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; color: var(--text-main); font-weight: 500; transition: background 0.15s ease;">
+                                        <input type="checkbox" value="completado" ${isChecked('completado')} style="width: 17px; height: 17px; accent-color: var(--rosa-strong); cursor: pointer; margin: 0; flex-shrink: 0;">
+                                        <span>✅ Completado</span>
+                                    </label>
+                                    <label class="multiselect-option" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; color: var(--text-main); font-weight: 500; transition: background 0.15s ease;">
+                                        <input type="checkbox" value="cumplido" ${isChecked('cumplido')} style="width: 17px; height: 17px; accent-color: var(--rosa-strong); cursor: pointer; margin: 0; flex-shrink: 0;">
+                                        <span>🔘 Cumplido</span>
+                                    </label>
+                                    <label class="multiselect-option" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; color: var(--text-main); font-weight: 500; transition: background 0.15s ease;">
+                                        <input type="checkbox" value="cancelada" ${isChecked('cancelada')} style="width: 17px; height: 17px; accent-color: var(--rosa-strong); cursor: pointer; margin: 0; flex-shrink: 0;">
+                                        <span>🚫 Cancelado</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
                         <div style="flex: 1; min-width: 150px;">
                             <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--rosa-strong); margin-bottom: 0.5rem; text-transform: uppercase;">📅 Periodo</label>
                             <select class="filter-select" id="filter-period">
-                                <option value="all">Todo el historial</option>
-                                <option value="today">Hoy</option>
-                                <option value="week">Esta semana</option>
-                                <option value="month">Este mes</option>
-                                <option value="custom">📅 Rango personalizado</option>
+                                <option value="all" ${isSelected('filterPeriod', 'all')}>Todo el historial</option>
+                                <option value="today" ${isSelected('filterPeriod', 'today')}>Hoy</option>
+                                <option value="week" ${isSelected('filterPeriod', 'week')}>Esta semana</option>
+                                <option value="month" ${isSelected('filterPeriod', 'month')}>Este mes</option>
+                                <option value="custom" ${isSelected('filterPeriod', 'custom')}>📅 Rango personalizado</option>
                             </select>
                         </div>
 
-                        <div id="custom-date-range" class="hidden" style="display: flex; gap: 1rem; align-items: flex-end; flex: 1 1 100%; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+                        <div id="custom-date-range" class="${(savedState.filterPeriod || 'all') === 'custom' ? '' : 'hidden'}" style="display: flex; gap: 1rem; align-items: flex-end; flex: 1 1 100%; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--rosa-strong); margin-bottom: 0.4rem; text-transform: uppercase;">Desde:</label>
-                                <input type="date" id="date-start" class="search-input" style="width: 100%;">
+                                <input type="date" id="date-start" class="search-input" value="${savedState.dateStart || ''}" style="width: 100%;">
                             </div>
                             <div style="flex: 1;">
                                 <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--rosa-strong); margin-bottom: 0.4rem; text-transform: uppercase;">Hasta:</label>
-                                <input type="date" id="date-end" class="search-input" style="width: 100%;">
+                                <input type="date" id="date-end" class="search-input" value="${savedState.dateEnd || ''}" style="width: 100%;">
                             </div>
                         </div>
                     </div>
@@ -168,6 +210,43 @@ export class DashboardView extends View {
         const user = this.app.currentUser;
         const plans = await FirebaseService.getPlansByRole(user);
 
+        // Flags for scroll restoration
+        this.historyLoaded = false;
+        this.dynamicTasksLoaded = false;
+        const savedScroll = sessionStorage.getItem('dashboard_scroll');
+        this._isRestoringScroll = !!(savedScroll && parseInt(savedScroll, 10) > 0);
+
+        // State saver
+        const saveDashboardState = () => {
+            const area = document.getElementById('filter-area')?.value || 'all';
+            const lead = document.getElementById('filter-lead')?.value || 'all';
+            const period = document.getElementById('filter-period')?.value || 'all';
+            const dateStart = document.getElementById('date-start')?.value || '';
+            const dateEnd = document.getElementById('date-end')?.value || '';
+            
+            const selectedStatuses = [];
+            document.querySelectorAll('#status-multiselect-dropdown input[type="checkbox"]').forEach(cb => {
+                if (cb.checked) selectedStatuses.push(cb.value);
+            });
+
+            sessionStorage.setItem('dashboard_state', JSON.stringify({
+                filterArea: area,
+                filterLead: lead,
+                filterPeriod: period,
+                dateStart,
+                dateEnd,
+                selectedStatuses
+            }));
+        };
+
+        // Scroll listener to save position
+        this._scrollListener = () => {
+            if (window.location.hash.startsWith('#dashboard')) {
+                sessionStorage.setItem('dashboard_scroll', window.scrollY);
+            }
+        };
+        window.addEventListener('scroll', this._scrollListener);
+
         // Listeners para tarjetas de stats
         const cards = document.querySelectorAll('.stat-card');
         const section = document.getElementById('dynamic-plans-section');
@@ -177,15 +256,41 @@ export class DashboardView extends View {
         cards[0].style.cursor = 'default';
         
         // Cards 1 y 2 (Tareas): Mostrar detalle de tareas
-        cards[1].onclick = () => this.showFilteredTasks('upcoming');
-        cards[2].onclick = () => this.showFilteredTasks('overdue');
+        cards[1].onclick = () => {
+            window.history.pushState({}, '', '#dashboard?view=upcoming');
+            if (!this.queryParams) this.queryParams = {};
+            this.queryParams.view = 'upcoming';
+            this.showFilteredTasks('upcoming');
+        };
+        cards[2].onclick = () => {
+            window.history.pushState({}, '', '#dashboard?view=overdue');
+            if (!this.queryParams) this.queryParams = {};
+            this.queryParams.view = 'overdue';
+            this.showFilteredTasks('overdue');
+        };
 
-        closeBtn.onclick = () => section.classList.add('hidden');
+        closeBtn.onclick = () => {
+            section.classList.add('hidden');
+            window.history.pushState({}, '', '#dashboard');
+            this.queryParams = {};
+        };
+
+        const dynamicFilterArea = document.getElementById('dynamic-filter-area');
+        if (dynamicFilterArea) {
+            dynamicFilterArea.onchange = () => {
+                const areaVal = dynamicFilterArea.value;
+                const currentView = this.queryParams?.view || 'overdue';
+                window.history.replaceState({}, '', `#dashboard?view=${currentView}&area=${encodeURIComponent(areaVal)}`);
+                if (!this.queryParams) this.queryParams = {};
+                this.queryParams.area = areaVal;
+                this.renderDynamicTasksList();
+            };
+        }
 
         const newPlanBtn = document.getElementById('new-plan-btn');
         if (newPlanBtn) newPlanBtn.onclick = () => this.app.navigateTo('plans/new');
 
-        const inputs = ['filter-area', 'filter-lead', 'filter-status', 'date-start', 'date-end', 'filter-period'];
+        const inputs = ['filter-area', 'filter-lead', 'date-start', 'date-end', 'filter-period'];
         inputs.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -198,19 +303,134 @@ export class DashboardView extends View {
                             customRange.classList.add('hidden');
                         }
                     }
+                    saveDashboardState();
                     this.loadHistory();
                 };
             }
         });
 
+        // Setup custom multiselect events
+        const trigger = document.getElementById('status-multiselect-trigger');
+        const dropdown = document.getElementById('status-multiselect-dropdown');
+        const checkboxes = document.querySelectorAll('#status-multiselect-dropdown input[type="checkbox"]');
+        const triggerText = document.getElementById('status-trigger-text');
+
+        const updateTriggerText = () => {
+            const checked = Array.from(checkboxes).filter(cb => cb.checked);
+            if (checked.length === 0) {
+                triggerText.textContent = "Ninguno seleccionado";
+            } else if (checked.length === checkboxes.length) {
+                triggerText.textContent = "Todos los estados";
+            } else {
+                const labels = checked.map(cb => cb.nextElementSibling.textContent.replace(/[⏳⚡✅🔘🚫]/g, '').trim());
+                triggerText.textContent = labels.join(', ');
+            }
+        };
+
+        updateTriggerText();
+
+        const arrowEl = document.getElementById('status-trigger-arrow');
+
+        // Move dropdown to body as a "portal" to escape all overflow:hidden parents
+        if (dropdown && !dropdown._isPortal) {
+            // Remove any old dropdown from a previous view instantiation
+            const oldDropdowns = document.body.querySelectorAll('#status-multiselect-dropdown');
+            oldDropdowns.forEach(old => {
+                if (old !== dropdown) {
+                    old.remove();
+                }
+            });
+            document.body.appendChild(dropdown);
+            dropdown._isPortal = true;
+        }
+
+        const positionDropdown = () => {
+            if (!trigger || !dropdown) return;
+            const rect = trigger.getBoundingClientRect();
+            const dropdownHeight = dropdown.offsetHeight || 220;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            if (spaceBelow < dropdownHeight + 10 && spaceAbove > dropdownHeight + 10) {
+                // Open upwards
+                dropdown.style.top = (rect.top - dropdownHeight - 6) + 'px';
+            } else {
+                // Open downwards
+                dropdown.style.top = (rect.bottom + 6) + 'px';
+            }
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.width = rect.width + 'px';
+        };
+
+        const openDropdown = () => {
+            dropdown.style.display = 'flex';
+            positionDropdown();
+            if (arrowEl) arrowEl.style.transform = 'rotate(180deg)';
+            trigger.style.borderColor = 'var(--rosa-med)';
+            trigger.style.boxShadow = '0 0 0 4px rgba(236,128,198,0.12)';
+        };
+
+        const closeDropdown = () => {
+            dropdown.style.display = 'none';
+            if (arrowEl) arrowEl.style.transform = 'rotate(0deg)';
+            trigger.style.borderColor = 'rgba(210,50,143,0.15)';
+            trigger.style.boxShadow = 'none';
+        };
+
+        // Reposition on scroll/resize so the fixed element follows the trigger
+        const scrollHandler = () => {
+            if (dropdown && dropdown.style.display === 'flex') positionDropdown();
+        };
+        window.removeEventListener('scroll', scrollHandler, true);
+        window.addEventListener('scroll', scrollHandler, true);
+        window.removeEventListener('resize', scrollHandler);
+        window.addEventListener('resize', scrollHandler);
+
+        if (trigger && dropdown) {
+            trigger.onclick = (e) => {
+                e.stopPropagation();
+                if (dropdown.style.display === 'flex') {
+                    closeDropdown();
+                } else {
+                    openDropdown();
+                }
+            };
+
+            document.addEventListener('click', (e) => {
+                if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.onchange = () => {
+                updateTriggerText();
+                saveDashboardState();
+                this.loadHistory();
+            };
+        });
+
         this.loadHistory();
+
+        // Restaurar estado si viene de query params (por ejemplo al volver con botón Atrás)
+        if (this.queryParams && this.queryParams.view) {
+            this.showFilteredTasks(this.queryParams.view);
+        }
     }
 
     async loadHistory() {
         const container = document.getElementById('plans-history-grid');
         const area = document.getElementById('filter-area').value;
         const lead = document.getElementById('filter-lead').value;
-        const status = document.getElementById('filter-status').value;
+        const selectedStatuses = [];
+        document.querySelectorAll('#status-multiselect-dropdown input:checked').forEach(cb => {
+            selectedStatuses.push(cb.value);
+            if (cb.value === 'cancelada') {
+                selectedStatuses.push('cancelado');
+            }
+        });
+
         const period = document.getElementById('filter-period').value;
         const start = document.getElementById('date-start').value;
         const end = document.getElementById('date-end').value;
@@ -236,7 +456,12 @@ export class DashboardView extends View {
                 let dynamicStatus = p.status || 'pendiente';
                 let dynamicProgress = p.progress || 0;
 
-                if (tasks.length > 0) {
+                if (['cumplido', 'cancelada', 'cancelado'].includes(p.status)) {
+                    dynamicStatus = p.status;
+                    if (p.status === 'cumplido') {
+                        dynamicProgress = 100;
+                    }
+                } else if (tasks.length > 0) {
                     const total = tasks.length;
                     const counts = tasks.reduce((acc, t) => {
                         acc[t.status] = (acc[t.status] || 0) + 1;
@@ -283,7 +508,7 @@ export class DashboardView extends View {
             plans = plans.filter(p => {
                 const matchArea = area === 'all' || p.area === area;
                 const matchLead = lead === 'all' || p.lead_id === lead;
-                const matchStatus = status === 'all' || p.dynamicStatus === status;
+                const matchStatus = selectedStatuses.includes(p.dynamicStatus);
                 return matchArea && matchLead && matchStatus;
             });
 
@@ -356,7 +581,12 @@ export class DashboardView extends View {
                 let dynamicStatus = p.status || 'pendiente';
                 let dynamicProgress = p.progress || 0;
 
-                if (tasks.length > 0) {
+                if (['cumplido', 'cancelada', 'cancelado'].includes(p.status)) {
+                    dynamicStatus = p.status;
+                    if (p.status === 'cumplido') {
+                        dynamicProgress = 100;
+                    }
+                } else if (tasks.length > 0) {
                     const now = new Date();
                     now.setHours(0,0,0,0);
 
@@ -444,6 +674,9 @@ export class DashboardView extends View {
                 btn.onclick = () => this.app.navigateTo(`plans/detail/${btn.dataset.id}`);
             });
 
+            this.historyLoaded = true;
+            this.restoreScrollPosition();
+
         } catch (error) {
             console.error(error);
             container.innerHTML = 'Error al cargar el historial.';
@@ -460,13 +693,21 @@ export class DashboardView extends View {
         section.classList.remove('hidden');
         list.innerHTML = '<div class="loading-inline">Cargando detalle de tareas...</div>';
 
+        // Reset filter value to 'all' if element exists
+        const dynamicFilterArea = document.getElementById('dynamic-filter-area');
+        if (dynamicFilterArea) {
+            dynamicFilterArea.value = this.queryParams?.area || 'all';
+        }
+
         try {
             const user = this.app.currentUser;
             const plans = await FirebaseService.getPlansByRole(user);
-            const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cancelada');
+            const activePlans = plans.filter(p => p.status !== 'completado' && p.status !== 'cumplido' && p.status !== 'cancelada' && p.status !== 'cancelado');
             const activePlanIds = activePlans.map(p => p.id);
-            const plansMap = {};
-            activePlans.forEach(p => plansMap[p.id] = p.title);
+            
+            // Map plan ID to the full plan object (to get its area)
+            this.loadedPlansMap = {};
+            activePlans.forEach(p => this.loadedPlansMap[p.id] = p);
 
             const rawTasks = await FirebaseService.getTasksByPlanIds(activePlanIds);
             const allTasks = TaskUtils.computeDynamicStatuses(rawTasks);
@@ -490,52 +731,112 @@ export class DashboardView extends View {
                 });
             }
 
-            if (filteredTasks.length === 0) {
-                list.innerHTML = '<p class="empty-state">No hay tareas en esta categoría.</p>';
-                return;
-            }
+            // Save state to class instance
+            this.currentDynamicTasks = filteredTasks;
 
-            // Obtener nombres de responsables
+            // Fetch assignee user names
             const assignedIds = [...new Set(filteredTasks.map(t => t.assigned_id).filter(id => !!id))];
-            const userNames = await FirebaseService.getUserNamesByIds(assignedIds);
+            this.loadedUserNames = await FirebaseService.getUserNamesByIds(assignedIds);
 
-            list.innerHTML = `
-                <div class="tasks-detail-container animate-up">
-                    <div class="tasks-detail-grid-header">
-                        <div class="grid-h-col">Actividad</div>
-                        <div class="grid-h-col">Asignado a</div>
-                        <div class="grid-h-col">Fecha Compromiso</div>
-                    </div>
-                    ${filteredTasks.map(t => {
-                        const dueDate = new Date(t.due_date + 'T00:00:00');
-                        const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
-                        const isRed = diffDays <= 0;
-
-                        return `
-                        <div class="tasks-detail-grid-row" onclick="location.hash='#plans/detail/${t.plan_id}'">
-                            <div class="grid-row-col task-name-cell">
-                                <div class="task-icon-dot ${isRed ? 'overdue' : 'upcoming'}"></div>
-                                <span>${t.title}</span>
-                            </div>
-                            <div class="grid-row-col task-assigned-cell">
-                                <div class="avatar-mini">${(userNames[t.assigned_id] || 'S').charAt(0)}</div>
-                                <span>${userNames[t.assigned_id] || 'Sin asignar'}</span>
-                            </div>
-                            <div class="grid-row-col task-date-cell">
-                                <span class="date-badge ${isRed ? 'overdue' : 'upcoming'}">
-                                    ${t.due_date}
-                                </span>
-                            </div>
-                        </div>
-                    `}).join('')}
-                </div>
-            `;
+            // Render
+            this.renderDynamicTasksList();
             
-            section.scrollIntoView({ behavior: 'smooth' });
+            this.dynamicTasksLoaded = true;
+            if (this._isRestoringScroll) {
+                this.restoreScrollPosition();
+            } else {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
 
         } catch (error) {
             console.error(error);
             list.innerHTML = '<p class="error">Error al cargar el detalle de tareas.</p>';
+        }
+    }
+
+    renderDynamicTasksList() {
+        const list = document.getElementById('dynamic-plans-list');
+        if (!list) return;
+
+        const dynamicFilterArea = document.getElementById('dynamic-filter-area');
+        const selectedArea = dynamicFilterArea ? dynamicFilterArea.value : 'all';
+
+        let displayTasks = this.currentDynamicTasks || [];
+
+        if (selectedArea && selectedArea !== 'all') {
+            const memberAreaMap = {};
+            if (this.members) {
+                this.members.forEach(m => {
+                    memberAreaMap[m.uid] = m.area;
+                });
+            }
+            displayTasks = displayTasks.filter(t => {
+                const assignedId = t.assigned_id;
+                const memberArea = memberAreaMap[assignedId];
+                return memberArea === selectedArea;
+            });
+        }
+
+        if (displayTasks.length === 0) {
+            list.innerHTML = '<p class="empty-state">No hay tareas en esta categoría para el área seleccionada.</p>';
+            return;
+        }
+
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        const userNames = this.loadedUserNames || {};
+
+        list.innerHTML = `
+            <div class="tasks-detail-container animate-up">
+                <div class="tasks-detail-grid-header">
+                    <div class="grid-h-col">Actividad</div>
+                    <div class="grid-h-col">Asignado a</div>
+                    <div class="grid-h-col">Fecha Compromiso</div>
+                </div>
+                ${displayTasks.map(t => {
+                    const dueDate = new Date(t.due_date + 'T00:00:00');
+                    const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
+                    const isRed = diffDays <= 0;
+
+                    return `
+                    <div class="tasks-detail-grid-row" onclick="location.hash='#plans/detail/${t.plan_id}?taskId=${t.id}'">
+                        <div class="grid-row-col task-name-cell">
+                            <div class="task-icon-dot ${isRed ? 'overdue' : 'upcoming'}"></div>
+                            <span>${t.title}</span>
+                        </div>
+                        <div class="grid-row-col task-assigned-cell">
+                            <div class="avatar-mini">${(userNames[t.assigned_id] || 'S').charAt(0)}</div>
+                            <span>${userNames[t.assigned_id] || 'Sin asignar'}</span>
+                        </div>
+                        <div class="grid-row-col task-date-cell">
+                            <span class="date-badge ${isRed ? 'overdue' : 'upcoming'}">
+                                ${t.due_date}
+                            </span>
+                        </div>
+                    </div>
+                `}).join('')}
+        `;
+    }
+
+    restoreScrollPosition() {
+        const needsDynamic = !!(this.queryParams && this.queryParams.view);
+        const canRestore = this.historyLoaded && (!needsDynamic || this.dynamicTasksLoaded);
+        
+        if (canRestore) {
+            const savedScroll = sessionStorage.getItem('dashboard_scroll');
+            if (savedScroll) {
+                const scrollY = parseInt(savedScroll, 10);
+                setTimeout(() => {
+                    window.scrollTo({ top: scrollY, behavior: 'smooth' });
+                }, 100);
+            }
+            this._isRestoringScroll = false;
+        }
+    }
+
+    destroy() {
+        if (this._scrollListener) {
+            window.removeEventListener('scroll', this._scrollListener);
         }
     }
 }

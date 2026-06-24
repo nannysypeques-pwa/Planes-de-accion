@@ -173,8 +173,10 @@ export const FirebaseService = {
             ...taskData,
             title: SecurityUtils.sanitizeText(taskData.title, 150)
         };
+        const currentUser = firebase.auth().currentUser;
         return await db.collection('tasks').add({
             ...sanitizedTask,
+            creator_id: currentUser ? currentUser.uid : (taskData.creator_id || null),
             status: taskData.status || 'pendiente',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -204,10 +206,13 @@ export const FirebaseService = {
     async getTasksByPlanIds(planIds) {
         if (!planIds || planIds.length === 0) return [];
         try {
+            // Deduplicar planIds para evitar traer tareas duplicadas
+            const uniquePlanIds = [...new Set(planIds)];
+            
             // Firestore tiene un límite de 30 en consultas 'in'
             const chunks = [];
-            for (let i = 0; i < planIds.length; i += 30) {
-                chunks.push(planIds.slice(i, i + 30));
+            for (let i = 0; i < uniquePlanIds.length; i += 30) {
+                chunks.push(uniquePlanIds.slice(i, i + 30));
             }
 
             const results = await Promise.all(chunks.map(chunk =>

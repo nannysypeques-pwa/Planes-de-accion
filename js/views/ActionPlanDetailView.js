@@ -24,7 +24,7 @@ export class ActionPlanDetailView extends View {
             const isLead = this.app.currentUser.uid === this.plan.lead_id;
             const isManager = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role);
             const isMember = this.plan.members_ids?.includes(this.app.currentUser.uid);
-            const canEditTask = isManager || isLead;
+            const canCreateTask = isManager || isLead || isMember;
             
             // Regla: Gerente edita todo, o si es el líder del plan, o si es creador coordinador/miembro
             const canEdit = this.app.currentUser.role === 'gerente' || 
@@ -36,6 +36,23 @@ export class ActionPlanDetailView extends View {
             const rawTasksData = taskSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const tasksData = TaskUtils.computeDynamicStatuses(rawTasksData);
             const allTasksCompleted = tasksData.length > 0 && tasksData.every(t => t.status === 'completado');
+
+            // Sincronización automática de estado completado
+            if (allTasksCompleted && !['completado', 'cumplido', 'cancelada', 'cancelado'].includes(this.plan.status)) {
+                await db.collection('action_plans').doc(this.planId).update({
+                    status: 'completado',
+                    progress: 100,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                this.plan.status = 'completado';
+                this.plan.progress = 100;
+            } else if (!allTasksCompleted && this.plan.status === 'completado') {
+                await db.collection('action_plans').doc(this.planId).update({
+                    status: 'en_proceso',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                this.plan.status = 'en_proceso';
+            }
 
             // Calcular progreso dinámico unificado
             let computedProgress = this.plan.progress || 0;
@@ -70,9 +87,32 @@ export class ActionPlanDetailView extends View {
                             </button>
                         ` : ''}
                     </div>
-                    <div class="plan-badges">
-                        <span class="badge" style="background: ${this.plan.risk === 'red' ? '#ef4444' : 'var(--rosa-med)'}; color: white;">${this.plan.status}</span>
-                    </div>
+                        ${(() => {
+                            let badgeBg = '#f3f4f6';
+                            let badgeColor = '#1f2937';
+                            let badgeBorder = 'none';
+                            
+                            if (this.plan.status === 'pendiente') {
+                                badgeBg = '#fef3c7';
+                                badgeColor = '#92400e';
+                            } else if (this.plan.status === 'en_proceso') {
+                                badgeBg = '#dcfce7';
+                                badgeColor = '#166534';
+                            } else if (this.plan.status === 'completado') {
+                                badgeBg = '#d0e8ff';
+                                badgeColor = '#004e92';
+                            } else if (['cumplido', 'cancelada', 'cancelado'].includes(this.plan.status)) {
+                                badgeBg = '#f1f5f9';
+                                badgeColor = '#64748b';
+                                badgeBorder = '1px solid #cbd5e1';
+                            } else if (this.plan.risk === 'red') {
+                                badgeBg = '#fee2e2';
+                                badgeColor = '#ef4444';
+                            }
+                            
+                            const displayStatus = this.plan.status === 'en_proceso' ? 'en proceso' : (this.plan.status === 'cancelada' || this.plan.status === 'cancelado' ? 'cancelado' : this.plan.status);
+                            return `<span class="badge" style="background: ${badgeBg}; color: ${badgeColor}; border: ${badgeBorder}; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; padding: 6px 12px; border-radius: 20px; display: inline-block; width: fit-content; margin-top: 0.5rem;">${displayStatus}</span>`;
+                        })()}
                 </div>
 
                 <div class="plan-grid">
@@ -213,22 +253,11 @@ export class ActionPlanDetailView extends View {
                             </div>
                         </section>
                         
-                        ${isLead && this.plan.status !== 'completado' && allTasksCompleted ? `
-                            <div class="completion-zone glass-effect animate-up">
-                                <h3>Finalización</h3>
-                                <p>Si todas las tareas están listas, marca el proyecto como cumplido para revisión.</p>
-                                <button class="primary-btn pulse" id="mark-complete-btn">Marcar como CUMPLIDO</button>
-                            </div>
-                        ` : ''}
-
-                        ${isManager && this.plan.status === 'en_revision' ? `
-                            <div class="manager-review-zone glass-effect animate-up">
-                                <h3>Revisión de Gerencia</h3>
-                                <p>Valida los resultados antes del cierre definitivo.</p>
-                                <div class="form-actions">
-                                    <button class="badge" style="background: #ef4444; color: white; border: none; cursor: pointer;" id="reject-plan">Solicitar Ajustes</button>
-                                    <button class="badge" style="background: var(--success); color: white; border: none; cursor: pointer;" id="approve-plan">Aprobar y Cerrar</button>
-                                </div>
+                        ${isManager && this.plan.status === 'completado' ? `
+                            <div class="completion-zone glass-effect animate-up" style="margin-top: 1.5rem; padding: 1.5rem; border-radius: var(--radius-md); border-top: 4px solid var(--rosa-med);">
+                                <h3>Marcar Proyecto como Cumplido</h3>
+                                <p style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 1rem;">Todas las tareas de este plan de acción están completadas. Como Gerente, puedes dar por cumplido formalmente este proyecto.</p>
+                                <button class="primary-btn pulse" id="mark-fulfilled-btn">Marcar como CUMPLIDO</button>
                             </div>
                         ` : ''}
                     </div>
@@ -273,7 +302,7 @@ export class ActionPlanDetailView extends View {
                                 <button class="apple-tab ${this.taskView === 'list' ? 'active' : ''}" data-view="list">Lista</button>
                                 <button class="apple-tab ${this.taskView === 'chronogram' ? 'active' : ''}" data-view="chronogram">Cronograma</button>
                             </div>
-                            ${canEditTask ? '<button class="action-btn sm" id="add-task-btn">+ Nueva Tarea</button>' : ''}
+                            ${canCreateTask ? '<button class="action-btn sm" id="add-task-btn">+ Nueva Tarea</button>' : ''}
                         </div>
                     </div>
 
@@ -366,7 +395,8 @@ export class ActionPlanDetailView extends View {
                        (['coordinador', 'coordinadora', 'miembro'].includes(this.app.currentUser.role) && 
                         this.plan.creator_id === this.app.currentUser.uid);
 
-        const canEditTask = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role) || this.plan.lead_id === this.app.currentUser.uid;
+        const isMember = this.plan.members_ids?.includes(this.app.currentUser.uid);
+        const canCreateTask = isManager || isLead || isMember;
 
         if (isLead) {
             const mgBtn = document.getElementById('manage-team-btn');
@@ -376,23 +406,24 @@ export class ActionPlanDetailView extends View {
             const closeFooterBtn = document.getElementById('close-modal-footer');
             if (closeFooterBtn) closeFooterBtn.onclick = () => this.toggleTeamModal(false);
             document.getElementById('save-team').onclick = () => this.saveTeamSelection();
-
-            const completeBtn = document.getElementById('mark-complete-btn');
-            if (completeBtn) completeBtn.onclick = () => this.updatePlanStatus('en_revision');
         }
 
         // Permitir crear tareas a cualquier persona que tenga permiso de tareas
-        if (canEditTask) {
+        if (canCreateTask) {
             const addTaskBtn = document.getElementById('add-task-btn');
             if (addTaskBtn) addTaskBtn.onclick = () => this.showTaskForm();
         }
 
         if (isManager) {
-            const approveBtn = document.getElementById('approve-plan');
-            if (approveBtn) approveBtn.onclick = () => this.updatePlanStatus('completado');
-
-            const rejectBtn = document.getElementById('reject-plan');
-            if (rejectBtn) rejectBtn.onclick = () => this.updatePlanStatus('en_proceso');
+            const markFulfilledBtn = document.getElementById('mark-fulfilled-btn');
+            if (markFulfilledBtn) {
+                markFulfilledBtn.onclick = async () => {
+                    const confirmed = await ToastService.confirm("¿Confirmas que deseas marcar este plan de acción como CUMPLIDO? Una vez marcado, dejará de aparecer como activo para coordinadores y usuarios comunes.", "Sí, Marcar Cumplido", "Cancelar");
+                    if (confirmed) {
+                        await this.updatePlanStatus('cumplido');
+                    }
+                };
+            }
         }
 
         // Configurar botón de edición si tiene permiso
@@ -461,7 +492,40 @@ export class ActionPlanDetailView extends View {
             };
         });
 
-        this.loadTasks();
+        await this.loadTasks();
+
+        // Si viene un taskId en los queryParams, buscar la tarea y enfocarla/resaltarla en el listado
+        if (this.queryParams && this.queryParams.taskId) {
+            const taskId = this.queryParams.taskId;
+            const allTasks = this.allPlanTasksData || [];
+            const task = allTasks.find(t => t.id === taskId);
+            if (task) {
+                // Si es subtarea, asegurarse de expandir el padre para que sea visible
+                if (task.parent_id) {
+                    const subtaskRow = document.querySelector(`.task-row-premium[data-id="${taskId}"]`);
+                    if (subtaskRow && subtaskRow.classList.contains('hidden')) {
+                        this.toggleSubtasks(task.parent_id);
+                    }
+                }
+                
+                // Encontrar el elemento de la tarea en el DOM
+                const taskEl = document.querySelector(`.task-row-premium[data-id="${taskId}"]`);
+                if (taskEl) {
+                    // Desplazarse suavemente hasta ella
+                    taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Aplicar la clase de resaltado
+                    taskEl.classList.add('highlighted-task');
+                    
+                    // Quitar el resaltado después de 3 segundos
+                    setTimeout(() => {
+                        taskEl.classList.remove('highlighted-task');
+                    }, 3000);
+                }
+            }
+            // Limpiar el parámetro de la URL
+            window.history.replaceState({}, '', `#plans/detail/${this.planId}`);
+        }
     }
 
     async updatePlanStatus(newStatus) {
@@ -472,8 +536,8 @@ export class ActionPlanDetailView extends View {
             });
 
             // Notificaciones de flujo
-            if (newStatus === 'en_revision') {
-                await FirebaseService.sendNotification(this.plan.creator_id, "Plan en Revisión", `El plan "${this.plan.title}" ha sido marcado como cumplido por el líder.`, `#plans/detail/${this.planId}`);
+            if (newStatus === 'cumplido') {
+                await FirebaseService.sendNotification(this.plan.creator_id, "Plan Cumplido", `El plan "${this.plan.title}" ha sido marcado como CUMPLIDO por la gerencia.`, `#plans/detail/${this.planId}`);
             }
 
             ToastService.success("Estado actualizado: " + newStatus);
@@ -504,6 +568,28 @@ export class ActionPlanDetailView extends View {
             const rawTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const allTasks = TaskUtils.computeDynamicStatuses(rawTasks);
             this.allPlanTasksData = allTasks; // Store full list for edit access
+
+            // Sincronización automática de estado completado
+            const allTasksCompleted = allTasks.length > 0 && allTasks.every(t => t.status === 'completado');
+            if (allTasksCompleted && !['completado', 'cumplido', 'cancelada', 'cancelado'].includes(this.plan.status)) {
+                await db.collection('action_plans').doc(this.planId).update({
+                    status: 'completado',
+                    progress: 100,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                this.plan.status = 'completado';
+                this.plan.progress = 100;
+                this.app.router();
+                return;
+            } else if (!allTasksCompleted && this.plan.status === 'completado') {
+                await db.collection('action_plans').doc(this.planId).update({
+                    status: 'en_proceso',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                this.plan.status = 'en_proceso';
+                this.app.router();
+                return;
+            }
 
             // Calcular conteos para los filtros
             const counts = {
@@ -570,7 +656,8 @@ export class ActionPlanDetailView extends View {
         const initials = name => (name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
         const isLead = this.app.currentUser.uid === this.plan.lead_id;
         const isManager = ['gerente', 'coordinador', 'coordinadora'].includes(this.app.currentUser.role);
-        const canEditTask = isManager || isLead;
+        const isMember = this.plan.members_ids?.includes(this.app.currentUser.uid);
+        const canCreateTask = isManager || isLead || isMember;
 
         const parents = tasks.filter(t => !t.parent_id);
         const subtasks = tasks.filter(t => t.parent_id);
@@ -582,9 +669,10 @@ export class ActionPlanDetailView extends View {
             const days = daysLeft(t.due_date);
             const timeStatus = days === null ? '' : (days < 0 ? 'st-overdue' : (days <= 3 ? 'st-soon' : 'st-ontime'));
             
-            // Permitir modificar si es manager, líder del proyecto o responsable asignado a la tarea
             const isAssigned = this.app.currentUser.uid === t.assigned_id;
-            const canModifyThisTask = canEditTask || isAssigned;
+            const isCreator = this.app.currentUser.uid === t.creator_id;
+            const canEditThisTask = isManager || isLead || isAssigned;
+            const canDeleteThisTask = isManager || isCreator;
             
             const lastNoteHtml = t.lastNote ? `
                 <div class="task-last-note">
@@ -617,13 +705,11 @@ export class ActionPlanDetailView extends View {
                          <div class="task-row-top">
                              <span class="task-status-pill ${st.cls}">${st.icon} ${st.label}</span>
                              ${daysHtml}
-                             ${canModifyThisTask ? `
-                                 <div class="task-actions">
-                                     ${!isSub ? `<button class="task-action-btn subtask" data-id="${t.id}">+ SUBTAREA</button>` : ''}
-                                     <button class="task-action-btn edit-task" data-id="${t.id}" title="Editar Tarea">✏️</button>
-                                     <button class="task-action-btn delete delete-task" data-id="${t.id}" title="Eliminar Tarea">🗑️</button>
-                                 </div>
-                             ` : ''}
+                             <div class="task-actions">
+                                 ${canCreateTask && !isSub ? `<button class="task-action-btn subtask" data-id="${t.id}">+ SUBTAREA</button>` : ''}
+                                 ${canEditThisTask ? `<button class="task-action-btn edit-task" data-id="${t.id}" title="Editar Tarea">✏️</button>` : ''}
+                                 ${canDeleteThisTask ? `<button class="task-action-btn delete delete-task" data-id="${t.id}" title="Eliminar Tarea">🗑️</button>` : ''}
+                             </div>
                          </div>
                         <h4 class="task-title" style="display: flex; align-items: center; gap: 0.5rem;">
                             ${!isSub && hasChildren ? `<button class="toggle-subtasks" data-id="${t.id}" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 1.2rem; transition: transform 0.3s;">⌄</button>` : ''}
@@ -1015,13 +1101,21 @@ export class ActionPlanDetailView extends View {
                 </div>
 
                 <div class="modal-actions">
-                    <button class="secondary-btn" onclick="document.getElementById('task-modal').classList.add('hidden')">Cancelar</button>
+                    <button class="secondary-btn" id="cancel-task-btn">Cancelar</button>
                     <button class="primary-btn" id="confirm-add-task">${taskToEdit ? 'Guardar Cambios' : 'Guardar Tarea'}</button>
                 </div>
             </div>
         `;
         
         taskModal.classList.remove('hidden');
+
+        const cancelTaskBtn = document.getElementById('cancel-task-btn');
+        if (cancelTaskBtn) {
+            cancelTaskBtn.onclick = () => {
+                taskModal.classList.add('hidden');
+                window.history.replaceState({}, '', `#plans/detail/${this.planId}`);
+            };
+        }
 
         document.getElementById('confirm-add-task').onclick = async (e) => {
             const btn = e.target;
@@ -1066,6 +1160,7 @@ export class ActionPlanDetailView extends View {
                     start_date: startDate,
                     due_date: dueDate,
                     status: status,
+                    creator_id: this.app.currentUser.uid,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
@@ -1102,6 +1197,7 @@ export class ActionPlanDetailView extends View {
                 }
 
                 taskModal.classList.add('hidden');
+                window.history.replaceState({}, '', `#plans/detail/${this.planId}`);
                 this.loadTasks();
             } catch (error) {
                 console.error(error);

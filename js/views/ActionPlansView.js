@@ -5,6 +5,7 @@ import { ToastService } from '../services/ToastService.js';
 export class ActionPlansView extends View {
     async render() {
         const container = this.createEl('div', 'plans-container fade-in');
+        const savedSearch = sessionStorage.getItem('plans_search') || '';
         
         container.innerHTML = `
             <div class="view-header">
@@ -20,7 +21,7 @@ export class ActionPlansView extends View {
                 <div style="flex: 1; position: relative;">
                     <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--rosa-strong); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">🔍 Filtrar mis proyectos</label>
                     <div style="position: relative;">
-                        <input type="text" placeholder="Buscar por nombre..." class="search-input" id="search-plans" style="padding-left: 3rem; width: 100%;">
+                        <input type="text" placeholder="Buscar por nombre..." class="search-input" id="search-plans" value="${savedSearch}" style="padding-left: 3rem; width: 100%;">
                         <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.7;">🔎</span>
                     </div>
                 </div>
@@ -41,8 +42,19 @@ export class ActionPlansView extends View {
 
         const searchInput = document.getElementById('search-plans');
         if (searchInput) {
-            searchInput.oninput = () => this.loadMyPlans();
+            searchInput.oninput = () => {
+                sessionStorage.setItem('plans_search', searchInput.value);
+                this.loadMyPlans();
+            };
         }
+
+        // Scroll listener to save position
+        this._scrollListener = () => {
+            if (window.location.hash.startsWith('#plans')) {
+                sessionStorage.setItem('plans_scroll', window.scrollY);
+            }
+        };
+        window.addEventListener('scroll', this._scrollListener);
 
         this.loadMyPlans();
     }
@@ -54,11 +66,15 @@ export class ActionPlansView extends View {
         try {
             const allPlans = await FirebaseService.getPlansByRole(this.app.currentUser);
             
-            // FILTRO CRÍTICO: Solo donde soy el líder, no estén canceladas, O sean MIS borradores
-            let myPlans = allPlans.filter(p => 
-                (p.lead_id === this.app.currentUser.uid || (p.status === 'borrador' && p.creator_id === this.app.currentUser.uid)) 
-                && p.status !== 'cancelada'
-            );
+            // FILTRO CRÍTICO: Solo donde soy el líder, no estén canceladas/cumplidas (a menos que sea gerente), O sean MIS borradores
+            const isManager = this.app.currentUser.role === 'gerente';
+            let myPlans = allPlans.filter(p => {
+                const isMyPlan = (p.lead_id === this.app.currentUser.uid || (p.status === 'borrador' && p.creator_id === this.app.currentUser.uid));
+                if (isManager) {
+                    return isMyPlan && p.status !== 'cancelada' && p.status !== 'cancelado';
+                }
+                return isMyPlan && p.status !== 'cancelada' && p.status !== 'cancelado' && p.status !== 'cumplido';
+            });
             
             if (search) {
                 myPlans = myPlans.filter(p => p.title.toLowerCase().includes(search));
@@ -77,7 +93,32 @@ export class ActionPlansView extends View {
             container.innerHTML = myPlans.map((p, i) => `
                 <div class="plan-card-item glass-effect animate-up" data-id="${p.id}" style="animation-delay: ${i * 0.1}s; border-top: 6px solid ${p.status === 'borrador' ? '#94a3b8' : (p.risk === 'red' ? '#ef4444' : 'var(--rosa-med)')}; padding: 2rem;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                        <span class="badge" style="background: ${p.status === 'borrador' ? '#f1f5f9' : 'var(--rosa-light)'}; color: ${p.status === 'borrador' ? '#475569' : 'var(--rosa-strong)'};">${p.status}</span>
+                        ${(() => {
+                            let badgeBg = '#f3f4f6';
+                            let badgeColor = '#1f2937';
+                            let badgeBorder = 'none';
+                            
+                            if (p.status === 'pendiente') {
+                                badgeBg = '#fef3c7';
+                                badgeColor = '#92400e';
+                            } else if (p.status === 'en_proceso') {
+                                badgeBg = '#dcfce7';
+                                badgeColor = '#166534';
+                            } else if (p.status === 'completado') {
+                                badgeBg = '#d0e8ff';
+                                badgeColor = '#004e92';
+                            } else if (['cumplido', 'cancelada', 'cancelado'].includes(p.status)) {
+                                badgeBg = '#f1f5f9';
+                                badgeColor = '#64748b';
+                                badgeBorder = '1px solid #cbd5e1';
+                            } else if (p.status === 'borrador') {
+                                badgeBg = '#f1f5f9';
+                                badgeColor = '#475569';
+                            }
+                            
+                            const displayStatus = p.status === 'en_proceso' ? 'en proceso' : (p.status === 'cancelada' || p.status === 'cancelado' ? 'cancelado' : p.status);
+                            return `<span class="badge" style="background: ${badgeBg}; color: ${badgeColor}; border: ${badgeBorder}; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem;">${displayStatus}</span>`;
+                        })()}
                         <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim);">ID: ${p.id.substring(0,6)}</span>
                     </div>
                     
@@ -110,9 +151,24 @@ export class ActionPlansView extends View {
                 btn.onclick = () => this.app.navigateTo(`plans/new/${btn.dataset.id}`);
             });
 
+            // Restore scroll position
+            const savedScroll = sessionStorage.getItem('plans_scroll');
+            if (savedScroll) {
+                const scrollY = parseInt(savedScroll, 10);
+                setTimeout(() => {
+                    window.scrollTo({ top: scrollY, behavior: 'smooth' });
+                }, 100);
+            }
+
         } catch (error) {
             console.error(error);
             container.innerHTML = 'Error al cargar tus proyectos.';
+        }
+    }
+
+    destroy() {
+        if (this._scrollListener) {
+            window.removeEventListener('scroll', this._scrollListener);
         }
     }
 }

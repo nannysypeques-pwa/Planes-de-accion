@@ -11,6 +11,8 @@ export class TasksView extends View {
 
     async render() {
         const container = this.createEl('div', 'tasks-view-container fade-in');
+        const savedAssignedFilter = sessionStorage.getItem('tasks_assigned_filter') || 'all';
+        const savedSupportFilter = sessionStorage.getItem('tasks_support_filter') || 'all';
         
         container.innerHTML = `
             <div class="view-header" style="margin-bottom: 2.2rem;">
@@ -20,24 +22,46 @@ export class TasksView extends View {
                 </div>
             </div>
 
-            <div class="tasks-sections-grid" style="display: flex; gap: 2.5rem; align-items: flex-start; flex-wrap: wrap;">
+            <div class="tasks-sections-grid" style="display: flex; gap: 2.5rem; align-items: flex-start; flex-wrap: wrap; width: 100%;">
                 
-                <!-- SECCIÓN 1: ACTIVIDADES ASIGNADAS (DEL PROYECTO) -->
-                <section class="assigned-tasks-section" style="flex: 1; min-width: 350px;">
-                    <div class="section-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 style="font-size: 1.4rem;">🎯 Actividades Asignadas</h2>
-                    </div>
+                <!-- COLUMNA IZQUIERDA: ACTIVIDADES DE PROYECTO -->
+                <div style="flex: 1; min-width: 350px; display: flex; flex-direction: column; gap: 2.5rem;">
+                    
+                    <!-- SECCIÓN 1: ACTIVIDADES ASIGNADAS (DEL PROYECTO) -->
+                    <section class="assigned-tasks-section">
+                        <div class="section-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="font-size: 1.4rem;">🎯 Actividades Asignadas</h2>
+                        </div>
 
-                    <div class="apple-tabs" id="task-filter-tabs" style="margin-bottom: 1.5rem;">
-                        <button class="apple-tab active" data-filter="all">Todas</button>
-                        <button class="apple-tab" data-filter="overdue">Vencidas</button>
-                        <button class="apple-tab" data-filter="upcoming">Próximas</button>
-                    </div>
+                        <div class="apple-tabs" id="task-filter-tabs" style="margin-bottom: 1.5rem;">
+                            <button class="apple-tab ${savedAssignedFilter === 'all' ? 'active' : ''}" data-filter="all">Todas</button>
+                            <button class="apple-tab ${savedAssignedFilter === 'overdue' ? 'active' : ''}" data-filter="overdue">Vencidas</button>
+                            <button class="apple-tab ${savedAssignedFilter === 'upcoming' ? 'active' : ''}" data-filter="upcoming">Próximas</button>
+                        </div>
 
-                    <div id="assigned-tasks-list" class="tasks-list">
-                        <div class="loading-inline">Sincronizando con proyectos...</div>
-                    </div>
-                </section>
+                        <div id="assigned-tasks-list" class="tasks-list">
+                            <div class="loading-inline">Sincronizando con proyectos...</div>
+                        </div>
+                    </section>
+
+                    <!-- SECCIÓN NUEVA: ACTIVIDADES A APOYAR -->
+                    <section class="support-tasks-section">
+                        <div class="section-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="font-size: 1.4rem;">🤝 Actividades a Apoyar</h2>
+                        </div>
+
+                        <div class="apple-tabs" id="support-task-filter-tabs" style="margin-bottom: 1.5rem;">
+                            <button class="apple-tab ${savedSupportFilter === 'all' ? 'active' : ''}" data-filter="all">Todas</button>
+                            <button class="apple-tab ${savedSupportFilter === 'overdue' ? 'active' : ''}" data-filter="overdue">Vencidas</button>
+                            <button class="apple-tab ${savedSupportFilter === 'upcoming' ? 'active' : ''}" data-filter="upcoming">Próximas</button>
+                        </div>
+
+                        <div id="support-tasks-list" class="tasks-list">
+                            <div class="loading-inline">Cargando actividades de apoyo...</div>
+                        </div>
+                    </section>
+
+                </div>
 
                 <!-- SECCIÓN 2: MIS ACTIVIDADES (PENDIENTES LIBRES) -->
                 <section class="personal-tasks-section glass-effect" style="flex: 0 0 450px; min-width: 320px; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); padding: 2.5rem;">
@@ -80,13 +104,33 @@ export class TasksView extends View {
     async afterRender() {
         this.app.showNavigation();
         
+        // Flags for scroll restoration
+        this.assignedLoaded = false;
+        this.supportLoaded = false;
+        this.personalLoaded = false;
+
+        const savedAssignedFilter = sessionStorage.getItem('tasks_assigned_filter') || 'all';
+        const savedSupportFilter = sessionStorage.getItem('tasks_support_filter') || 'all';
+
         // Listeners Tabs Asignadas
-        const tabs = document.querySelectorAll('.apple-tab');
+        const tabs = document.querySelectorAll('#task-filter-tabs .apple-tab');
         tabs.forEach(tab => {
             tab.onclick = () => {
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
+                sessionStorage.setItem('tasks_assigned_filter', tab.dataset.filter);
                 this.loadAssignedTasks(tab.dataset.filter);
+            };
+        });
+
+        // Listeners Tabs Apoyo
+        const supportTabs = document.querySelectorAll('#support-task-filter-tabs .apple-tab');
+        supportTabs.forEach(tab => {
+            tab.onclick = () => {
+                supportTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                sessionStorage.setItem('tasks_support_filter', tab.dataset.filter);
+                this.loadSupportTasks(tab.dataset.filter);
             };
         });
 
@@ -96,8 +140,17 @@ export class TasksView extends View {
             addBtn.onclick = () => this.handleAddTask();
         }
 
+        // Scroll listener to save position
+        this._scrollListener = () => {
+            if (window.location.hash.startsWith('#tasks')) {
+                sessionStorage.setItem('tasks_scroll', window.scrollY);
+            }
+        };
+        window.addEventListener('scroll', this._scrollListener);
+
         // Carga Inicial
-        this.loadAssignedTasks('all');
+        this.loadAssignedTasks(savedAssignedFilter);
+        this.loadSupportTasks(savedSupportFilter);
         this.loadPersonalTasks();
     }
 
@@ -352,13 +405,18 @@ export class TasksView extends View {
                 };
             });
 
+            this.assignedLoaded = true;
+            this.restoreScrollPosition();
+
         } catch (error) {
             console.error(error);
             container.innerHTML = '<p class="error-msg">Error al cargar tareas asignadas: ' + error.message + '</p>';
+            this.assignedLoaded = true;
+            this.restoreScrollPosition();
         }
     }
 
-    openNoteModal(taskId, title, newStatus, currentFilter) {
+    openNoteModal(taskId, title, newStatus, currentFilter, isSupport = false) {
         const modal = document.getElementById('task-note-modal');
         const titleEl = document.getElementById('note-modal-title');
         const labelEl = document.getElementById('note-status-label');
@@ -408,7 +466,12 @@ export class TasksView extends View {
 
                 ToastService.success("Actividad actualizada correctamente.");
                 modal.classList.add('hidden');
-                this.loadAssignedTasks(currentFilter);
+                
+                if (isSupport) {
+                    this.loadSupportTasks(currentFilter);
+                } else {
+                    this.loadAssignedTasks(currentFilter);
+                }
             } catch (error) {
                 console.error(error);
                 ToastService.error("Error al actualizar la actividad.");
@@ -433,6 +496,8 @@ export class TasksView extends View {
                         <p style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">No tienes pendientes personales</p>
                         <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">Las actividades que agregues aparecerán aquí.</p>
                     </div>`;
+                this.personalLoaded = true;
+                this.restoreScrollPosition();
                 return;
             }
 
@@ -549,9 +614,14 @@ export class TasksView extends View {
                 };
             });
 
+            this.personalLoaded = true;
+            this.restoreScrollPosition();
+
         } catch (error) {
             console.error(error);
             container.innerHTML = '<p style="color: #ef4444; font-size: 0.85rem; padding: 1rem;">Error al cargar actividades. Intenta recargar.</p>';
+            this.personalLoaded = true;
+            this.restoreScrollPosition();
         }
     }
 
@@ -631,6 +701,243 @@ export class TasksView extends View {
             this.loadPersonalTasks();
         } catch (error) {
             ToastService.error("Error al actualizar");
+        }
+    }
+
+    async loadSupportTasks(filter = 'all') {
+        const container = document.getElementById('support-tasks-list');
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        
+        try {
+            const snapshot = await db.collection('tasks')
+                .where('helper_id', '==', this.app.currentUser.uid)
+                .get();
+            
+            let myTasksRaw = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const myPlanIds = [...new Set(myTasksRaw.map(t => t.plan_id))];
+            let allTasks = [];
+            
+            if (myPlanIds.length > 0) {
+                const allPlanTasks = await FirebaseService.getTasksByPlanIds(myPlanIds);
+                const processedTasks = TaskUtils.computeDynamicStatuses(allPlanTasks);
+                allTasks = processedTasks.filter(t => t.helper_id === this.app.currentUser.uid);
+            }
+
+            // 1. Obtener todos los planes involucrados
+            const planIds = [...new Set(allTasks.map(t => t.plan_id))];
+            const plansSnap = await Promise.all(
+                planIds.map(id => db.collection('action_plans').doc(id).get())
+            );
+            
+            const plansMap = {};
+            const leadIds = new Set();
+            
+            plansSnap.forEach(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    plansMap[doc.id] = {
+                        id: doc.id,
+                        title: data.title,
+                        lead_id: data.lead_id
+                    };
+                    if (data.lead_id) leadIds.add(data.lead_id);
+                }
+            });
+
+            // 2. Obtener nombres de los líderes
+            const leadNames = await FirebaseService.getUserNamesByIds(Array.from(leadIds));
+
+            // Obtener nombres de todos los responsables principales de las tareas de apoyo
+            const assignedIds = [...new Set(allTasks.map(t => t.assigned_id).filter(id => !!id))];
+            const assignedNames = await FirebaseService.getUserNamesByIds(assignedIds);
+
+            // 3. Filtrado previo (Siempre excluir canceladas)
+            let filteredTasks = allTasks.filter(t => t.status !== 'cancelada');
+
+            if (filter === 'overdue') {
+                filteredTasks = filteredTasks.filter(t => {
+                    if (!t.due_date || t.status === 'completado') return false;
+                    const dueDate = new Date(t.due_date + 'T00:00:00');
+                    const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
+                    return diffDays <= 0;
+                });
+            } else if (filter === 'upcoming') {
+                filteredTasks = filteredTasks.filter(t => {
+                    if (!t.due_date || t.status === 'completado') return false;
+                    const dueDate = new Date(t.due_date + 'T00:00:00');
+                    const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
+                    return diffDays > 0 && diffDays <= 2;
+                });
+            } else {
+                filteredTasks = filteredTasks.filter(t => t.status !== 'completado');
+            }
+
+            if (filteredTasks.length === 0) {
+                container.innerHTML = '<p class="empty-state" style="padding: 2rem;">No hay actividades de apoyo pendientes.</p>';
+                return;
+            }
+
+            // 4. Agrupar por Plan
+            const groups = {};
+            filteredTasks.forEach(t => {
+                if (!groups[t.plan_id]) groups[t.plan_id] = [];
+                groups[t.plan_id].push(t);
+            });
+
+            // 5. Ordenar grupos por urgencia (tarea más próxima)
+            const sortedGroups = Object.entries(groups).map(([planId, tasks]) => {
+                tasks.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+                return { planId, tasks, minDate: new Date(tasks[0].due_date) };
+            }).sort((a, b) => a.minDate - b.minDate);
+
+            // 6. Renderizado
+            container.innerHTML = sortedGroups.map((group, groupIdx) => {
+                const plan = plansMap[group.planId] || { title: 'Proyecto Desconocido', lead_id: null };
+                const leadName = leadNames[plan.lead_id] || 'No asignado';
+                
+                return `
+                <div class="project-group-container animate-up" style="animation-delay: ${groupIdx * 0.1}s; margin-bottom: 2rem;">
+                    <div class="project-group-header glass-effect">
+                        <div class="header-main-info toggle-project-support" data-target="project-support-${group.planId}">
+                            <div class="chevron"></div>
+                            <div style="flex: 1;">
+                                <h3 class="project-group-title">${plan.title}</h3>
+                                <div class="project-group-meta">
+                                    <span>👤 <strong>Líder:</strong> ${leadName}</span>
+                                    <span style="margin-left: 1rem;">📋 <strong>${group.tasks.length}</strong> tareas de apoyo</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="secondary-btn sm view-plan-btn" data-plan-id="${group.planId}" style="flex-shrink: 0; padding: 0.5rem 1rem; font-size: 0.7rem;">
+                            📂 Ver Plan
+                        </button>
+                    </div>
+                    
+                    <div id="project-support-${group.planId}" class="project-tasks-list">
+                        ${(() => {
+                            return group.tasks.map(t => {
+                                const dueDate = new Date(t.due_date + 'T00:00:00');
+                                const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
+                                
+                                let dateClass = 'on-time';
+                                if (diffDays <= 0) dateClass = 'critical';
+                                else if (diffDays <= 2) dateClass = 'warning';
+
+                                let indicator = 'indicator-yellow';
+                                if (t.status === 'en_proceso') indicator = 'indicator-blue';
+                                else if (t.status === 'completado') indicator = 'indicator-green';
+                                else if (t.status === 'cancelada') indicator = 'indicator-cancelada';
+                                if (diffDays < 0 && !['completado', 'cancelada'].includes(t.status)) indicator = 'indicator-red';
+
+                                const lastNote = t.lastNote ? `
+                                    <div class="task-last-note">
+                                        <span style="font-size: 0.95rem; margin-top: 1px;">💬</span>
+                                        <div style="flex: 1; min-width: 0;">
+                                            <strong>${t.lastNoteBy || 'Actualización'}</strong>
+                                            <span style="opacity: 0.9;">${t.lastNote}</span>
+                                        </div>
+                                    </div>
+                                ` : '';
+
+                                const respName = assignedNames[t.assigned_id] || 'Sin asignar';
+
+                                return `
+                                <div class="task-card-mini" 
+                                     style="animation-delay: ${groupIdx * 0.1 + (group.tasks.indexOf(t) * 0.05)}s;">
+                                    <div class="task-indicator ${indicator}"></div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <h4 class="task-title-mini" style="display: flex; align-items: center; gap: 0.4rem;">
+                                            ${t.parent_id ? '<span class="subtask-indicator">↳ Subtarea:</span>' : ''}
+                                            ${t.title}
+                                        </h4>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.2rem; display: flex; align-items: center; gap: 0.3rem;">
+                                            <span>👤 <strong>Responsable:</strong> ${respName}</span>
+                                        </div>
+                                        ${lastNote}
+                                        <div class="task-mini-meta">
+                                            <div class="task-date-badge sm ${dateClass}">
+                                                <span class="date-icon">${diffDays <= 0 ? '⚠️' : '📅'}</span>
+                                                <span class="date-text" style="font-size: 0.75rem;">${t.due_date}</span>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <span style="font-size: 0.65rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Estado:</span>
+                                                <select class="status-selector-sm" data-id="${t.id}" data-title="${t.title}" style="font-size: 0.65rem; padding: 0.3rem 1.5rem 0.3rem 0.6rem;">
+                                                    <option value="pendiente" ${t.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
+                                                    <option value="en_proceso" ${t.status === 'en_proceso' ? 'selected' : ''}>⚡ En Proceso</option>
+                                                    <option value="completado" ${t.status === 'completado' ? 'selected' : ''}>✅ Completada</option>
+                                                    <option value="cancelada" ${t.status === 'cancelada' ? 'selected' : ''}>🚫 Cancelada</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('');
+                        })()}
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            // Listeners toggle
+            container.querySelectorAll('.toggle-project-support').forEach(header => {
+                header.onclick = () => {
+                    const targetId = header.dataset.target;
+                    const target = document.getElementById(targetId);
+                    const container = header.closest('.project-group-container');
+                    container.classList.toggle('collapsed');
+                };
+            });
+
+            // Listeners status (ahora abren modal)
+            container.querySelectorAll('.status-selector-sm').forEach(select => {
+                select.onchange = (e) => {
+                    const newStatus = e.target.value;
+                    const taskId = select.dataset.id;
+                    const taskTitle = select.dataset.title;
+                    this.openNoteModal(taskId, taskTitle, newStatus, filter, true);
+                    // Revertir el select temporalmente hasta que se guarde la nota
+                    e.target.value = e.target.defaultValue; 
+                };
+                // Guardar el valor inicial para revertir si se cancela
+                select.defaultValue = select.value;
+            });
+
+            // Listeners view plan
+            container.querySelectorAll('.view-plan-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.app.navigateTo(`plans/detail/${btn.dataset.planId}`);
+                };
+            });
+
+            this.supportLoaded = true;
+            this.restoreScrollPosition();
+
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = '<p class="error-msg">Error al cargar tareas de apoyo: ' + error.message + '</p>';
+            this.supportLoaded = true;
+            this.restoreScrollPosition();
+        }
+    }
+
+    restoreScrollPosition() {
+        if (this.assignedLoaded && this.supportLoaded && this.personalLoaded) {
+            const savedScroll = sessionStorage.getItem('tasks_scroll');
+            if (savedScroll) {
+                const scrollY = parseInt(savedScroll, 10);
+                setTimeout(() => {
+                    window.scrollTo({ top: scrollY, behavior: 'smooth' });
+                }, 100);
+            }
+        }
+    }
+
+    destroy() {
+        if (this._scrollListener) {
+            window.removeEventListener('scroll', this._scrollListener);
         }
     }
 }

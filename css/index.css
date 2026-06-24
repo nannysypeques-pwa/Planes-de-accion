@@ -163,7 +163,7 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 4rem;
+    padding: 0 clamp(1.5rem, 3vw, 4rem);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -179,6 +179,8 @@ header {
     display: flex;
     align-items: center;
     gap: 0.8rem;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .logo span {
@@ -196,11 +198,13 @@ header {
     margin-left: 0.5rem;
     padding-left: 0.5rem;
     border-left: 2px solid var(--border);
+    white-space: nowrap;
 }
 
 #main-nav {
     display: flex;
-    gap: 2rem;
+    gap: clamp(1rem, 1.8vw, 2rem);
+    flex-shrink: 0;
 }
 
 .nav-link {
@@ -208,6 +212,7 @@ header {
     color: var(--text-dim);
     font-weight: 600;
     transition: var(--transition);
+    white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -1946,9 +1951,10 @@ input[type="date"] {
     letter-spacing: 0.3px;
 }
 .st-pending  .task-status-pill { background: #fef3c7; color: #92400e; }
-.st-progress .task-status-pill { background: #d1fae5; color: #065f46; }
-.st-done     .task-status-pill { background: #dbeafe; color: #1e40af; }
+.st-progress .task-status-pill { background: #dcfce7; color: #166534; }
+.st-done     .task-status-pill { background: #d0e8ff; color: #004e92; }
 .st-blocked  .task-status-pill { background: #fee2e2; color: #991b1b; }
+.st-overdue  .task-status-pill { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
 
 .task-title {
     font-size: 1rem;
@@ -5201,5 +5207,134 @@ span.flatpickr-weekday {
 .flatpickr-time .numInputWrapper span {
     border: none !important;
     background: transparent !important;
+}
+
+@keyframes taskGlow {
+    0% {
+        box-shadow: 0 0 0 0px var(--rosa-strong);
+        background-color: rgba(255, 122, 145, 0.15);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(255, 122, 145, 0);
+        background-color: rgba(255, 122, 145, 0.05);
+    }
+    100% {
+        box-shadow: 0 0 0 0px rgba(255, 122, 145, 0);
+    }
+}
+
+.highlighted-task {
+    animation: taskGlow 2s ease-in-out infinite;
+    border: 2px solid var(--rosa-strong) !important;
+}
+
+.status-cumplido {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* Custom Multiselect */
+.custom-multiselect {
+    position: relative;
+    width: 100%;
+}
+
+.multiselect-trigger {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.8rem 1.2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-main);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: var(--transition);
+    min-height: 52px;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+.multiselect-trigger:hover {
+    border-color: var(--rosa-med);
+    box-shadow: 0 4px 12px rgba(255, 122, 145, 0.08);
+}
+
+.multiselect-trigger.active {
+    border-color: var(--rosa-med);
+    box-shadow: 0 0 0 4px rgba(236, 128, 198, 0.1);
+}
+
+.trigger-arrow {
+    color: var(--rosa-med);
+    font-size: 0.75rem;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 0.5rem;
+}
+
+.multiselect-trigger.active .trigger-arrow {
+    transform: rotate(180deg);
+}
+
+.multiselect-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    z-index: 100;
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar */
+.multiselect-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+.multiselect-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+.multiselect-dropdown::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.multiselect-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.multiselect-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    font-weight: 500;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.multiselect-option:hover {
+    background: var(--bg-main);
+}
+
+.multiselect-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--rosa-strong);
+    cursor: pointer;
+    margin: 0;
 }
 

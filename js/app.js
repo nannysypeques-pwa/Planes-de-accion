@@ -412,8 +412,21 @@ class App {
     }
 
     async router() {
-        const fullHash = window.location.hash.replace('#', '') || 'login';
-        const [route, action, id] = fullHash.split('/');
+        const hashParts = window.location.hash.replace('#', '').split('?');
+        const hashPath = hashParts[0] || 'login';
+        const queryParamsString = hashParts[1] || '';
+
+        const queryParams = {};
+        if (queryParamsString) {
+            queryParamsString.split('&').forEach(param => {
+                const [key, val] = param.split('=');
+                if (key) {
+                    queryParams[key] = decodeURIComponent(val || '');
+                }
+            });
+        }
+
+        const [route, action, id] = hashPath.split('/');
         
         const path = action ? `${route}/${action}` : route;
         
@@ -446,6 +459,7 @@ class App {
         } else {
             view = new ViewClass(this, id);
         }
+        view.queryParams = queryParams;
         
         this.container.innerHTML = '<div class="loader-container"><div class="spinner"></div></div>';
         

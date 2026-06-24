@@ -8,6 +8,14 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerente';
     }
 
+    // Función para validar si el usuario es Gerente o Coordinador/a
+    function isManagerOrCoordinator() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'gerente' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coordinador' ||
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coordinadora');
+    }
+
     // Función para obtener el área del usuario
     function getUserArea() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.area;
@@ -23,8 +31,12 @@ service cloud.firestore {
     match /action_plans/{planId} {
       allow read: if request.auth.uid != null;
       allow create: if request.auth.uid != null;
-      // Edición y borrado
-      allow update, delete: if request.auth.uid == resource.data.creator_id || isManager();
+      // Edición
+      allow update: if request.auth.uid == resource.data.creator_id || 
+                    request.auth.uid == resource.data.lead_id || 
+                    isManagerOrCoordinator();
+      // Borrado
+      allow delete: if isManager();
       
       // Historial
       match /history/{histId} {
@@ -35,13 +47,28 @@ service cloud.firestore {
     // 3. TAREAS DE PROYECTO
     match /tasks/{taskId} {
       allow read: if request.auth.uid != null;
-      allow create: if request.auth.uid != null;
-      allow update, delete: if request.auth.uid == resource.data.creator_id || 
-                            request.auth.uid == resource.data.assigned_id ||
-                            isManager() ||
-                            (resource.data.plan_id != null && 
-                             exists(/databases/$(database)/documents/action_plans/$(resource.data.plan_id)) &&
-                             get(/databases/$(database)/documents/action_plans/$(resource.data.plan_id)).data.lead_id == request.auth.uid);
+      allow create: if request.auth.uid != null && 
+                    request.resource.data.plan_id != null &&
+                    exists(/databases/$(database)/documents/action_plans/$(request.resource.data.plan_id)) &&
+                    (
+                      isManagerOrCoordinator() || 
+                      get(/databases/$(database)/documents/action_plans/$(request.resource.data.plan_id)).data.lead_id == request.auth.uid ||
+                      (get(/databases/$(database)/documents/action_plans/$(request.resource.data.plan_id)).data.members_ids != null &&
+                       request.auth.uid in get(/databases/$(database)/documents/action_plans/$(request.resource.data.plan_id)).data.members_ids)
+                    );
+      allow update: if request.auth.uid != null &&
+                    (
+                      isManagerOrCoordinator() || 
+                      request.auth.uid == resource.data.assigned_id ||
+                      (resource.data.plan_id != null && 
+                       exists(/databases/$(database)/documents/action_plans/$(resource.data.plan_id)) &&
+                       get(/databases/$(database)/documents/action_plans/$(resource.data.plan_id)).data.lead_id == request.auth.uid)
+                    );
+      allow delete: if request.auth.uid != null &&
+                    (
+                      isManager() || 
+                      request.auth.uid == resource.data.creator_id
+                    );
       
       // Notas de seguimiento
       match /notes/{noteId} {
